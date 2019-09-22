@@ -8,6 +8,7 @@
  */
 #pragma once
 #include <stdint.h>
+#include <vector>
 #include "bus.hpp"
 
 
@@ -51,28 +52,28 @@ class MOS6502 {
     /********************************************************
      *                  ADDRESSING MODES                    *
      ********************************************************/
-    bool ACC();         // Accumulator addressing:          1-byte instruction on accumulator
-    bool IMM();         // Immediate address:               the 2d byte of instruction is the operand
-    bool ABS();         // Abbsolute addressing:            the 2d byte of instruction is the 8 low order bits of the address, 3d is the 8 high order bits (64k total addresses)
-    bool ZPI();         // Zero page addressing:            fetch only the 2d byte of the instruction. Assuming the high byte is 0
-    bool ZPX();         // Indexed zero page addressing X:  the X register is added to the 2d byte. The high byte is 0. No carry is added to high byte, so no page overlapping
-    bool ZPY();         // Indexed zero page addressing Y:  Same as in ZPX but with Y register
-    bool ABX();         // Indexed abbsolute addressing X:  Adding the X the one absolute address
-    bool ABY();         // Indexed abbsolute addressing Y:  Same as in ABX but with Y register
-    bool IMP();         // Implied addressing:              The address is implicit in the opcode
-    bool REL();         // Relative addressing:             Only with brach instruction. Is the destination for the conditional branch. The 2d byte is added to the PC (range from -128 to 127)
-    bool IIX();         // Indexed indirect addressing:     The 2d byte is added to the X discarding the carry.
+    bool ACC();         // (???)Accumulator addressing:          1-byte instruction on accumulator
+    bool IMM();         // (IMM)Immediate address:               the 2d byte of instruction is the operand
+    bool ABS();         // (ABS)Abbsolute addressing:            the 2d byte of instruction is the 8 low order bits of the address, 3d is the 8 high order bits (64k total addresses)
+    bool ZPI();         // (ZP0)Zero page addressing:            fetch only the 2d byte of the instruction. Assuming the high byte is 0
+    bool ZPX();         // (ZPX)Indexed zero page addressing X:  the X register is added to the 2d byte. The high byte is 0. No carry is added to high byte, so no page overlapping
+    bool ZPY();         // (ZPY)Indexed zero page addressing Y:  Same as in ZPX but with Y register
+    bool ABX();         // (ABX)Indexed abbsolute addressing X:  Adding the X the one absolute address
+    bool ABY();         // (ABY)Indexed abbsolute addressing Y:  Same as in ABX but with Y register
+    bool IMP();         // (IMP)Implied addressing:              The address is implicit in the opcode
+    bool REL();         // (REL)Relative addressing:             Only with brach instruction. Is the destination for the conditional branch. The 2d byte is added to the PC (range from -128 to 127)
+    bool IIX();         // (IZX)Indexed indirect addressing:     The 2d byte is added to the X discarding the carry.
     //                                  The result point to the ZERO PAGE address which contains the low order byte of the effective address,
     //                                  the next memory location on PAGE ZERO contains the high order byte of the effective address.
     //                              ex: [LDA ($20,X)] (where is X = $04). X is added so $20 -> $24. Then fetch the $24 -> 0024: 7421.
     //                                  The fetched 2171 (little endian) from the memory location 0024 is the actual address to be used to load the content into the register A.
     //                                  So id in $2171: 124 then A = 124
     //                                  formula: target_address = (X + opcode[1]) & 0xFF
-    bool IIY();         // Indirect indexed addressing:     Y is applied to the indirectly fetched address.
+    bool IIY();         // (IZY)Indirect indexed addressing:     Y is applied to the indirectly fetched address.
     //                              ex: [LDA ($86),Y] (where in $0086: 28 40). First fetch the address located at $0086, add that address to the Y register to get
     //                                  the final address. So the address will be $4028 (little endian) and Y is $10 then the final address is
     //                                  $4038 ad A will be loaded with the content of the address $4038
-    bool IND();         // Abolute indirect:                The 2d byte contain the low byte of address, the 3d byte contain the high byte of the address.
+    bool IND();         // (IND)Abolute indirect:                The 2d byte contain the low byte of address, the 3d byte contain the high byte of the address.
     //                                  The loaded address contain the low byte fo the final addrss and the followed the high byte of the final address
 
     /********************************************************
@@ -148,4 +149,17 @@ class MOS6502 {
     bool TXS();         // Transfer Index X to Stack Register
     bool TYA();         // Transfer Index Y to A
 
+    bool XXX();         // Illegal instruction
+
+    /********************************************************
+     *                   INSTRUCTION SET                    *
+     ********************************************************/
+    struct instruction_t {
+        std::string name;
+        bool (MOS6502::*operation)(void) = nullptr;
+        bool (MOS6502::*addrmode)(void) = nullptr;
+        unsigned int cycles = 0;
+    };
+
+    static const std::vector<instruction_t> opcode;
 };

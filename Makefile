@@ -1,12 +1,15 @@
 PROGNAME = emu
 FLAGS = -g -O0 -Wall -Werror
 
-ALLOBJ = log.o util.o mos6502.o bus.o 
+ALLOBJ = log.o util.o mos6502.o opcode.o bus.o 
 
 all: main
 
-mos6502.o: mos6502.cpp mos6502.hpp
+mos6502.o: mos6502.cpp mos6502.hpp opcode.o
 	$(CXX) $(FLAGS) -c -o mos6502.o mos6502.cpp
+
+opcode.o: opcode.cpp mos6502.hpp
+	$(CXX) $(FLAGS) -c -o opcode.o opcode.cpp
 
 bus.o: bus.cpp bus.hpp
 	$(CXX) $(FLAGS) -c -o bus.o bus.cpp
