@@ -4,6 +4,6 @@
 
 int main(int argc, char *argv[]) {
     Bus b;
-    mos6502 cpu;
+    MOS6502 cpu(&b);
     return 0;
 }
