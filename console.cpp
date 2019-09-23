@@ -10,7 +10,12 @@ Console::Console() : print_mem_page(0) {
     for (unsigned int j = 0; j < HEIGHT; j++) {
         for (unsigned int i = 0; i < WIDTH; i++) {
             display[j][i] = EMPTY;
+
+            if (j == 0 || i == WIDTH - 1 || j == HEIGHT - 1) {
+                display[j][i] = '*';
+            }
         }
+
     }
 
     memcpy(&(display[3][25]), "MEMORY", sizeof("MEMORY") - 1);
@@ -18,9 +23,11 @@ Console::Console() : print_mem_page(0) {
 }
 
 
-bool Console::frame(p_state_t &state, uint8_t *mem, const size_t mem_size) {
+bool Console::frame(p_state_t &state, uint8_t *p_mem, const size_t size) {
     current_state = state;
-    draw_memory(mem, mem_size);
+    mem = p_mem;
+    mem_size = size;
+    draw_memory();
     draw_status();
     draw_logs();
 
@@ -30,17 +37,27 @@ bool Console::frame(p_state_t &state, uint8_t *mem, const size_t mem_size) {
 }
 
 
-void Console::draw_memory(uint8_t *mem, const size_t mem_size) {
+void Console::draw_memory() {
 
     size_t from = print_mem_page * 255;
     size_t to = from + 255;
 
     size_t line = HEADER_HEIGHT;
 
+    buff = "PAGE: ";
+    if (print_mem_page < 10) {
+        buff += "00";
+    } else if (print_mem_page < 100) {
+        buff += "0";
+    }
+
+    buff += std::to_string(print_mem_page);
+    memcpy(&(display[line - 1][32]), &(buff[0]), buff.length());
+
     for (size_t i = from; i < to;) {
 
         size_t col = 0;
-        col = sprintf(&(display[line][col]), "0x%04X", ((unsigned int)i) & 0x0000FFFF);
+        col = sprintf(&(display[line][col]), "0x%04X  ", ((unsigned int)i) & 0x0000FFFF);
         col--;
 
         for (size_t j = 0; j < MEM_WIDTH; j++, i++) {
@@ -64,7 +81,6 @@ void Console::draw_memory(uint8_t *mem, const size_t mem_size) {
 
 
 void Console::draw_status() {
-    std::string buff;
     unsigned int line = HEADER_HEIGHT;
     unsigned int col = STATUS_X;
 
@@ -115,7 +131,7 @@ void Console::draw_status() {
     line += 2;
     col = STATUS_X - 1;
     buff = "OP: [" + uint8_to_bin(current_state.opcode) + "]    " +
-           current_state.opcode_name + "  XXXX ";
+           current_state.opcode_name + "  XXXX";
     sprintf(&(buff[23]), "0x%02X", current_state.opcode);
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
@@ -147,8 +163,15 @@ void Console::draw_status() {
     // Cycle counters
     line += 2;
     col = STATUS_X;
-    buff = "CYCL N: " + std::to_string(current_state.cycles_count) +
-           "   CYCL NEED: " + std::to_string(current_state.cycles_needed);
+    buff = "CYCL N: ";
+    if (current_state.cycles_count < 10) {
+        buff += "0";
+    }
+    buff += std::to_string(current_state.cycles_count) + "   CYCL NEED: ";
+    if (current_state.cycles_needed < 10) {
+        buff += "0";
+    }
+    buff += std::to_string(current_state.cycles_needed);
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 }
 
@@ -168,13 +191,48 @@ void Console::show() {
 
 
 bool Console::get_input() {
+    char in;
+
+    while (true) {
+        scanf(" %c", &in);
+
+        switch (in) {
+        case 'c':
+        case 'C':
+            return true;
+
+        case 'n':
+        case 'N':
+            if (print_mem_page < 0xFFFF) {
+                print_mem_page++;
+                draw_memory();
+                show();
+            }
+
+            break;
+
+        case 'b':
+        case 'B':
+            if (print_mem_page > 0) {
+                print_mem_page--;
+                draw_memory();
+                show();
+            }
+
+            break;
+
+        case 'q':
+        case 'Q':
+            return false;
+
+        default:
+            break;
+        }
+    }
+
     return false;
 }
 
-
-void Console::set_header_line_1(const char *str, size_t size) {
-    memcpy(&(display[0][0]), str, size);
-}
 
 void Console::set_header_line_2(const char *str, size_t size) {
     memcpy(&(display[1][0]), str, size);

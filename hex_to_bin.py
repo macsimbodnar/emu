@@ -22,7 +22,8 @@ def main():
                 hex_string = hex_string + c
 
     b = bytes.fromhex(hex_string)
-    open('binary.bin', 'wb').write(b)
+    binary_file = filename[:-3] + "bin"
+    open(binary_file, 'wb').write(b)
 
 
 if __name__ == "__main__":

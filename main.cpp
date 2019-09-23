@@ -32,12 +32,9 @@ int main(int argc, char *argv[]) {
     size = ftell(ptr);
     fseek(ptr, 0, SEEK_SET);
 
-    std::string line_1 =
-        "                                           EMU";
     std::string line_2 = "Total memory: " + std::to_string(mem_size) + " bytes";
     std::string line_3 = "Binary size: " + std::to_string(size) + " bytes";
     
-    console.set_header_line_1(line_1.c_str(), line_1.length());
     console.set_header_line_2(line_2.c_str(), line_2.length());
     console.set_header_line_3(line_3.c_str(), line_3.length());
 
