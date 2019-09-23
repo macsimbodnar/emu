@@ -33,7 +33,7 @@ void Bus::access(const uint16_t address, const access_t read_write, uint8_t &dat
 }
 
 
-size_t Bus::get_max_addr() {
+size_t Bus::gem_mem_size() {
     return RAM.size();
 }
 

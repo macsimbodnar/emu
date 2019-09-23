@@ -1,7 +1,7 @@
 PROGNAME = emu
 FLAGS = -g -O0 -Wall -Werror
 
-ALLOBJ = log.o util.o mos6502.o opcode.o bus.o 
+ALLOBJ = log.o util.o mos6502.o opcode.o bus.o console.o
 
 all: main
 
@@ -19,6 +19,9 @@ log.o: log.cpp log.hpp
 
 util.o: util.cpp util.hpp
 	$(CXX) $(FLAGS) -c -o util.o util.cpp
+
+console.o: console.cpp console.hpp
+	$(CXX) $(FLAGS) -c -o console.o console.cpp
 
 main: $(ALLOBJ)
 	$(CXX) $(FLAGS) -o $(PROGNAME) main.cpp $(ALLOBJ)

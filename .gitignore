@@ -2,4 +2,5 @@
 emu
 documentation
 .vscode
-program.b
+program.hex
+program.bin

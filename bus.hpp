@@ -25,6 +25,6 @@ class Bus {
 
     void access(const uint16_t address, const access_t read_write, uint8_t &data);
 
-    size_t get_max_addr();
+    size_t gem_mem_size();
     uint8_t * get_mem_ptr();
 };
