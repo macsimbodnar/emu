@@ -3,7 +3,8 @@
 
 
 MOS6502::MOS6502(Bus *b) :
-    A(0x00), X(0x00), Y(0x00), PC(0x0000), S(0x00), P(0x00), bus(b), cycles_count(0), cycles_needed(0) {
+    A(0x00), X(0x00), Y(0x00), PC(0x0000), S(0x00), P(0x00), bus(b),
+    cycles_count(0), cycles_needed(0) {
 
     if (bus == nullptr) {
         log_e("Bus is nullptr");
@@ -233,7 +234,7 @@ bool MOS6502::IND() {
 /********************************************************
  *                   INSTRUCTION SET                    *
  ********************************************************/
-bool MOS6502::ADC() {
+bool MOS6502::ADC() {   // DONE
     mem_fetch();
 
     // add is done in 16bit mode to catch the carry bit
@@ -250,7 +251,12 @@ bool MOS6502::ADC() {
     return true;
 }
 
-bool MOS6502::AND() {
+bool MOS6502::AND() {   // DONE
+    mem_fetch();
+    A = A & fetched;
+
+    set_flag(Z, A == 0x00);
+    set_flag(N, A & 0x80);
     return true;
 }
 
@@ -258,48 +264,145 @@ bool MOS6502::ASL() {
     return true;
 }
 
-bool MOS6502::BCC() {
-    return true;
+bool MOS6502::BCC() {   // DONE
+    if (read_flag(C) == false) {
+        cycles_needed++;
+
+        cur_abb_add = PC + cur_rel_add;
+
+        if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
+            cycles_needed++;
+        }
+
+        PC = cur_abb_add;
+    }
+
+    return false;
 }
 
-bool MOS6502::BCS() {
-    return true;
+bool MOS6502::BCS() {   // DONE
+    if (read_flag(C)) {
+        cycles_needed++;
+
+        cur_abb_add = PC + cur_rel_add;
+
+        if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
+            cycles_needed++;
+        }
+
+        PC = cur_abb_add;
+    }
+
+    return false;
 }
 
-bool MOS6502::BEQ() {
-    return true;
+bool MOS6502::BEQ() {   // DONE
+    if (read_flag(Z)) {
+        cycles_needed++;
+
+        cur_abb_add = PC + cur_rel_add;
+
+        if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
+            cycles_needed++;
+        }
+
+        PC = cur_abb_add;
+    }
+
+    return false;
 }
 
 bool MOS6502::BIT() {
     return true;
 }
 
-bool MOS6502::BMI() {
-    return true;
+bool MOS6502::BMI() {   // DONE
+    if (read_flag(N)) {
+        cycles_needed++;
+
+        cur_abb_add = PC + cur_rel_add;
+
+        if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
+            cycles_needed++;
+        }
+
+        PC = cur_abb_add;
+    }
+
+    return false;
 }
 
-bool MOS6502::BNE() {
-    return true;
+bool MOS6502::BNE() {   // DONE
+    if (read_flag(Z) == false) {
+        cycles_needed++;
+
+        cur_abb_add = PC + cur_rel_add;
+
+        if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
+            cycles_needed++;
+        }
+
+        PC = cur_abb_add;
+    }
+
+    return false;
 }
 
-bool MOS6502::BPL() {
-    return true;
+bool MOS6502::BPL() {   // DONE
+    if (read_flag(N) == false) {
+        cycles_needed++;
+
+        cur_abb_add = PC + cur_rel_add;
+
+        if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
+            cycles_needed++;
+        }
+
+        PC = cur_abb_add;
+    }
+
+    return false;
 }
 
 bool MOS6502::BRK() {
     return true;
 }
 
-bool MOS6502::BVC() {
-    return true;
+bool MOS6502::BVC() {   // DONE
+    if (read_flag(O) == false) {
+        cycles_needed++;
+
+        cur_abb_add = PC + cur_rel_add;
+
+        if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
+            cycles_needed++;
+        }
+
+        PC = cur_abb_add;
+    }
+
+    return false;
 }
 
-bool MOS6502::BVS() {
-    return true;
+bool MOS6502::BVS() {   // DONE
+    if (read_flag(O)) {
+        cycles_needed++;
+
+        cur_abb_add = PC + cur_rel_add;
+
+        if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
+            cycles_needed++;
+        }
+
+        PC = cur_abb_add;
+    }
+
+    return false;
 }
 
-bool MOS6502::CLC() {
-    return true;
+bool MOS6502::CLC() {   // DONE
+    set_flag(C, false);
+    return false;
 }
 
 bool MOS6502::CLD() {
