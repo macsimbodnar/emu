@@ -1,6 +1,14 @@
+#include "log.hpp"
 #include "mos6502.hpp"
 
-MOS6502::MOS6502(Bus *b) : bus(b) {}
+
+MOS6502::MOS6502(Bus *b) :
+    A(0x00), X(0x00), Y(0x00), PC(0x0000), S(0x00), P(0x00), bus(b), cycles_count(0), cycles_needed(0) {
+
+    if (bus == nullptr) {
+        log_e("Bus is nullptr");
+    }
+}
 
 
 void MOS6502::set_flag(const status_flag_t flag, const bool val) {
@@ -17,64 +25,177 @@ bool MOS6502::read_flag(const status_flag_t flag) {
 }
 
 
-void MOS6502::clock() {
+void MOS6502::mem_fetch() {
+    bus->access(cur_abb_add, Bus::READ, fetched);
+}
 
+
+void MOS6502::mem_write(uint16_t address, uint8_t data) {
+    bus->access(address, Bus::WRITE, data);
+}
+
+
+void MOS6502::clock() {
+    if (cycles_count == cycles_needed) {
+        cur_abb_add = PC;
+        mem_fetch();
+        opcode = fetched;
+        PC++;
+
+        cycles_needed = opcode_table[opcode].cycles;
+        cycles_count = 1;
+    } else {
+        (this->*opcode_table[opcode].addrmode)();
+        (this->*opcode_table[opcode].operation)();
+    }
+
+    cycles_count++;
 }
 
 
 /********************************************************
  *                  ADDRESSING MODES                    *
  ********************************************************/
-bool MOS6502::ACC() {
-    return true;
+bool MOS6502::ACC() {   // DONE
+    fetched = A;
+    return false;
 }
 
-bool MOS6502::IMM() {
-    return true;
+bool MOS6502::IMM() {   // DONE
+    cur_abb_add = PC++;
+    mem_fetch();
+    return false;
 }
 
-bool MOS6502::ABS() {
-    return true;
+bool MOS6502::ABS() {   // DONE
+    cur_abb_add = PC++;
+    mem_fetch();
+    uint16_t tmp = fetched & 0x00FF;
+    cur_abb_add = PC++;
+    mem_fetch();
+    cur_abb_add = (fetched << 8) | tmp;
+    return false;
 }
 
-bool MOS6502::ZPI() {
-    return true;
+bool MOS6502::ZPI() {   // DONE
+    cur_abb_add = PC++;
+    mem_fetch();
+    cur_abb_add = fetched & 0x00FF;
+    return false;
 }
 
-bool MOS6502::ZPX() {
-    return true;
+bool MOS6502::ZPX() {   // DONE
+    cur_abb_add = PC++;
+    mem_fetch();
+    cur_abb_add = (fetched + X) & 0x00FF;
+    return false;
 }
 
-bool MOS6502::ZPY() {
-    return true;
+bool MOS6502::ZPY() {   // DONE
+    cur_abb_add = PC++;
+    mem_fetch();
+    cur_abb_add = (fetched + Y) & 0x00FF;
+    return false;
 }
 
-bool MOS6502::ABX() {
-    return true;
+bool MOS6502::ABX() {   // DONE
+    cur_abb_add = PC++;
+    mem_fetch();
+    uint16_t tmp = fetched & 0x00FF;
+    cur_abb_add = PC++;
+    mem_fetch();
+    cur_abb_add = ((fetched << 8) | tmp) + X;
+
+    if ((cur_abb_add & 0xFF00) != (fetched << 8)) {
+        return true;
+    }
+
+    return false;
 }
 
-bool MOS6502::ABY() {
-    return true;
+bool MOS6502::ABY() {   // DONE
+    cur_abb_add = PC++;
+    mem_fetch();
+    uint16_t tmp = fetched & 0x00FF;
+    cur_abb_add = PC++;
+    mem_fetch();
+    cur_abb_add = ((fetched << 8) | tmp) + Y;
+
+    if ((cur_abb_add & 0xFF00) != (fetched << 8)) {
+        return true;
+    }
+
+    return false;
 }
 
-bool MOS6502::IMP() {
-    return true;
+bool MOS6502::IMP() {   // DONE
+    return false;
 }
 
-bool MOS6502::REL() {
-    return true;
+bool MOS6502::REL() {   // DONE
+    cur_abb_add = PC++;
+    mem_fetch();
+    cur_rel_add = fetched & 0x00FF;
+
+    if (cur_rel_add & 0x80) {   // if cur_rel_add >= 128
+        cur_rel_add |= 0xFF00;  // the this is negative offset
+    }
+
+    return false;
 }
 
 bool MOS6502::IIX() {
-    return true;
+    cur_abb_add = PC++;
+    mem_fetch();
+    cur_abb_add = ((uint16_t)fetched + (uint16_t)X) & 0x00FF;
+    mem_fetch();
+    uint16_t tmp = fetched & 0x00FF;
+    cur_abb_add++;
+    mem_fetch();
+    cur_abb_add = ((((uint16_t)fetched) << 8) & 0xFF00) | tmp;
+
+    return false;
 }
 
 bool MOS6502::IIY() {
-    return true;
+    cur_abb_add = PC++;
+    mem_fetch();
+    cur_abb_add = fetched & 0x00FF;
+    mem_fetch();
+    uint16_t tmp = fetched & 0x00FF;
+    cur_abb_add++;
+    mem_fetch();
+    cur_abb_add = (((((uint16_t)fetched) << 8) & 0xFF00) | tmp) + Y;
+
+    if ((cur_abb_add & 0xFF00) != (fetched << 8)) {
+        return true;
+    }
+
+    return false;
 }
 
 bool MOS6502::IND() {
-    return true;
+    cur_abb_add = PC++;
+    mem_fetch();
+    uint16_t tmp = fetched & 0x00FF;
+    cur_abb_add = PC++;
+    mem_fetch();
+    tmp = (((uint16_t)fetched) << 8) | tmp;
+
+    cur_abb_add = tmp;
+    mem_fetch();
+    tmp = fetched & 0x00FF;
+
+    if (tmp == 0x00FF) {    // Page boundary hardware bug
+        cur_abb_add &= 0xFF00;
+    } else { // Behave normally
+        cur_abb_add++;
+    }
+
+    mem_fetch();
+    cur_abb_add = (((uint16_t)fetched) << 8) | tmp;
+
+    return false;
 }
 
 

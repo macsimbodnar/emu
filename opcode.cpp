@@ -2,7 +2,7 @@
 
 using M = MOS6502;
 
-const std::vector<MOS6502::instruction_t> MOS6502::opcode = {
+const std::vector<MOS6502::instruction_t> MOS6502::opcode_table = {
     //                   0                               1                               2                               3                              4                                      5                              6                                7                               8                               9                                     A                               B                               C                               D                               E                               F
     /*0*/ { "BRK", &M::BRK, &M::IMM, 7 }, { "ORA", &M::ORA, &M::IIX, 6 }, { "???", &M::XXX, &M::IMP, 2 }, { "???", &M::XXX, &M::IMP, 8 }, { "???", &M::NOP, &M::IMP, 3 }, /*0*/ { "ORA", &M::ORA, &M::ZPI, 3 }, { "ASL", &M::ASL, &M::ZPI, 5 }, { "???", &M::XXX, &M::IMP, 5 }, { "PHP", &M::PHP, &M::IMP, 3 }, { "ORA", &M::ORA, &M::IMM, 2 }, /*0*/ { "ASL", &M::ASL, &M::ACC, 2 }, { "???", &M::XXX, &M::IMP, 2 }, { "???", &M::NOP, &M::IMP, 4 }, { "ORA", &M::ORA, &M::ABS, 4 }, { "ASL", &M::ASL, &M::ABS, 6 }, { "???", &M::XXX, &M::IMP, 6 }, /*0*/
     /*1*/ { "BPL", &M::BPL, &M::REL, 2 }, { "ORA", &M::ORA, &M::IIY, 5 }, { "???", &M::XXX, &M::IMP, 2 }, { "???", &M::XXX, &M::IMP, 8 }, { "???", &M::NOP, &M::IMP, 4 }, /*1*/ { "ORA", &M::ORA, &M::ZPX, 4 }, { "ASL", &M::ASL, &M::ZPX, 6 }, { "???", &M::XXX, &M::IMP, 6 }, { "CLC", &M::CLC, &M::IMP, 2 }, { "ORA", &M::ORA, &M::ABY, 4 }, /*1*/ { "???", &M::NOP, &M::IMP, 2 }, { "???", &M::XXX, &M::IMP, 7 }, { "???", &M::NOP, &M::IMP, 4 }, { "ORA", &M::ORA, &M::ABX, 4 }, { "ASL", &M::ASL, &M::ABX, 7 }, { "???", &M::XXX, &M::IMP, 7 }, /*1*/
