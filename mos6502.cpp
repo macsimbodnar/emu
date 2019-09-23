@@ -52,6 +52,37 @@ void MOS6502::clock() {
     cycles_count++;
 }
 
+p_state_t MOS6502::get_status() {
+    p_state_t state;
+
+    state.A = A;
+    state.X = X;
+    state.Y = Y;
+    state.PC = PC;
+
+    state.N = read_flag(N);
+    state.O = read_flag(O);
+    state.B = read_flag(B);
+    state.D = read_flag(D);
+    state.I = read_flag(I);
+    state.Z = read_flag(Z);
+    state.C = read_flag(C);
+
+    state.opcode_name = opcode_table[opcode].name;
+    state.opcode = opcode;
+
+    state.fetched = fetched;
+    state.cur_abb_add = cur_abb_add;
+    state.cur_rel_add = cur_rel_add;
+
+    state.tmp_buff = tmp_buff;
+
+    state.cycles_count = cycles_count;
+    state.cycles_needed = cycles_needed;
+
+    return state;
+}
+
 
 /********************************************************
  *                  ADDRESSING MODES                    *
@@ -63,17 +94,17 @@ bool MOS6502::ACC() {   // DONE
 
 bool MOS6502::IMM() {   // DONE
     cur_abb_add = PC++;
-    mem_fetch();
+    // mem_fetch();
     return false;
 }
 
 bool MOS6502::ABS() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    uint16_t tmp = fetched & 0x00FF;
+    tmp_buff = fetched & 0x00FF;
     cur_abb_add = PC++;
     mem_fetch();
-    cur_abb_add = (fetched << 8) | tmp;
+    cur_abb_add = (fetched << 8) | tmp_buff;
     return false;
 }
 
@@ -101,10 +132,10 @@ bool MOS6502::ZPY() {   // DONE
 bool MOS6502::ABX() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    uint16_t tmp = fetched & 0x00FF;
+    tmp_buff = fetched & 0x00FF;
     cur_abb_add = PC++;
     mem_fetch();
-    cur_abb_add = ((fetched << 8) | tmp) + X;
+    cur_abb_add = ((fetched << 8) | tmp_buff) + X;
 
     if ((cur_abb_add & 0xFF00) != (fetched << 8)) {
         return true;
@@ -116,10 +147,10 @@ bool MOS6502::ABX() {   // DONE
 bool MOS6502::ABY() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    uint16_t tmp = fetched & 0x00FF;
+    tmp_buff = fetched & 0x00FF;
     cur_abb_add = PC++;
     mem_fetch();
-    cur_abb_add = ((fetched << 8) | tmp) + Y;
+    cur_abb_add = ((fetched << 8) | tmp_buff) + Y;
 
     if ((cur_abb_add & 0xFF00) != (fetched << 8)) {
         return true;
@@ -149,10 +180,10 @@ bool MOS6502::IIX() {
     mem_fetch();
     cur_abb_add = ((uint16_t)fetched + (uint16_t)X) & 0x00FF;
     mem_fetch();
-    uint16_t tmp = fetched & 0x00FF;
+    tmp_buff = fetched & 0x00FF;
     cur_abb_add++;
     mem_fetch();
-    cur_abb_add = ((((uint16_t)fetched) << 8) & 0xFF00) | tmp;
+    cur_abb_add = ((((uint16_t)fetched) << 8) & 0xFF00) | tmp_buff;
 
     return false;
 }
@@ -162,10 +193,10 @@ bool MOS6502::IIY() {
     mem_fetch();
     cur_abb_add = fetched & 0x00FF;
     mem_fetch();
-    uint16_t tmp = fetched & 0x00FF;
+    tmp_buff = fetched & 0x00FF;
     cur_abb_add++;
     mem_fetch();
-    cur_abb_add = (((((uint16_t)fetched) << 8) & 0xFF00) | tmp) + Y;
+    cur_abb_add = (((((uint16_t)fetched) << 8) & 0xFF00) | tmp_buff) + Y;
 
     if ((cur_abb_add & 0xFF00) != (fetched << 8)) {
         return true;
@@ -177,23 +208,23 @@ bool MOS6502::IIY() {
 bool MOS6502::IND() {
     cur_abb_add = PC++;
     mem_fetch();
-    uint16_t tmp = fetched & 0x00FF;
+    tmp_buff = fetched & 0x00FF;
     cur_abb_add = PC++;
     mem_fetch();
-    tmp = (((uint16_t)fetched) << 8) | tmp;
+    tmp_buff = (((uint16_t)fetched) << 8) | tmp_buff;
 
-    cur_abb_add = tmp;
+    cur_abb_add = tmp_buff;
     mem_fetch();
-    tmp = fetched & 0x00FF;
+    tmp_buff = fetched & 0x00FF;
 
-    if (tmp == 0x00FF) {    // Page boundary hardware bug
+    if (tmp_buff == 0x00FF) {    // Page boundary hardware bug
         cur_abb_add &= 0xFF00;
     } else { // Behave normally
         cur_abb_add++;
     }
 
     mem_fetch();
-    cur_abb_add = (((uint16_t)fetched) << 8) | tmp;
+    cur_abb_add = (((uint16_t)fetched) << 8) | tmp_buff;
 
     return false;
 }
@@ -203,6 +234,19 @@ bool MOS6502::IND() {
  *                   INSTRUCTION SET                    *
  ********************************************************/
 bool MOS6502::ADC() {
+    mem_fetch();
+
+    // add is done in 16bit mode to catch the carry bit
+    tmp_buff = (uint16_t)A + (uint16_t)fetched + (read_flag(C) ? 0x0001 : 0x0000);
+
+    set_flag(C, tmp_buff > 0x00FF);                 // Set the carry bit
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);     // Set Zero bit
+    // Set Overflow bit
+    set_flag(O, (~((uint16_t)(A ^ fetched) & 0x00FF) & ((uint16_t)A ^ tmp_buff) & 0x0080));
+    set_flag(N, tmp_buff & 0x80);                   // Set the Negative bit
+
+    A = tmp_buff & 0x00FF;
+
     return true;
 }
 

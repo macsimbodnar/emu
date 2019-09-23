@@ -12,6 +12,35 @@
 #include "bus.hpp"
 
 
+struct p_state_t {
+    uint8_t A;
+    uint8_t X;
+    uint8_t Y;
+    uint16_t PC;
+
+    bool N;
+    bool O;
+    bool B;
+    bool D;
+    bool I;
+    bool Z;
+    bool C;
+
+    std::string opcode_name;
+    uint8_t opcode;
+
+    uint8_t fetched;
+
+    uint16_t cur_abb_add;
+    uint16_t cur_rel_add;
+
+    uint16_t tmp_buff;
+
+    unsigned int cycles_count;
+    unsigned int cycles_needed;
+};
+
+
 class MOS6502 {
 
   private:
@@ -59,6 +88,8 @@ class MOS6502 {
     uint16_t cur_abb_add; // Current abbsolute address
     uint16_t cur_rel_add; // Current abbsolute address
 
+    uint16_t tmp_buff;    // Temporary 16-bit buffer
+
     static const std::vector<instruction_t> opcode_table;
 
   private:
@@ -76,6 +107,7 @@ class MOS6502 {
     void irq();         // Interrupt signal
     void nmi();         // Non-maskable interrupt signal
 
+    p_state_t get_status();
 
   private:
     /********************************************************

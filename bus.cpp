@@ -31,3 +31,14 @@ void Bus::access(const uint16_t address, const access_t read_write, uint8_t &dat
         log_e("Wrong access type to the address " + uint16_to_hex(address, true));
     }
 }
+
+
+size_t Bus::get_max_addr() {
+    return RAM.size();
+}
+
+
+uint8_t * Bus::get_mem_ptr() {
+    return &(RAM[0]);
+}
+
