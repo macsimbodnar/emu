@@ -65,9 +65,9 @@ void Console::draw_memory() {
 
             sprintf(&(display[line][col]), " %02X", mem[i]);
 
-            if (i == current_state.cur_abb_add && i == current_state.PC) {
+            if (i == current_state.address && i == current_state.PC) {
                 sprintf(&(display[line][col]), "#%02X", mem[i]);
-            } else if (i == current_state.cur_abb_add) {
+            } else if (i == current_state.address) {
                 sprintf(&(display[line][col]), "$%02X", mem[i]);
             } else if (i == current_state.PC) {
                 sprintf(&(display[line][col]), "*%02X", mem[i]);
@@ -143,21 +143,21 @@ void Console::draw_status() {
     // Fetched
     line++;
     col = STATUS_X - 2;
-    buff = "BUS: [" + uint8_to_bin(current_state.data_on_bus) + "]         XXXX";
-    sprintf(&(buff[24]), "0x%02X", current_state.data_on_bus);
+    buff = "BUS: [" + uint8_to_bin(current_state.data_bus) + "]         XXXX";
+    sprintf(&(buff[24]), "0x%02X", current_state.data_bus);
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
     // Current abbsolute address
     line += 2;
     col = STATUS_X - 2;
-    buff = "ADR: [" + uint16_to_bin(current_state.cur_abb_add) + "] XXXXXX";
-    sprintf(&(buff[24]), "0x%04X", current_state.cur_abb_add);
+    buff = "ADR: [" + uint16_to_bin(current_state.address) + "] XXXXXX";
+    sprintf(&(buff[24]), "0x%04X", current_state.address);
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
     // Current relative address
     line ++;
-    buff = "REL: [" + uint16_to_bin(current_state.cur_rel_add) + "] XXXXXX";
-    sprintf(&(buff[24]), "0x%04X", current_state.cur_rel_add);
+    buff = "REL: [" + uint16_to_bin(current_state.relative_adderess) + "] XXXXXX";
+    sprintf(&(buff[24]), "0x%04X", current_state.relative_adderess);
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
     // Tmp buffer

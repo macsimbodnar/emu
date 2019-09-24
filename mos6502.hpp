@@ -54,10 +54,10 @@ class MOS6502 {
     Bus *bus;
 
     unsigned int cycles;
-    uint8_t opcode;       // Current opcode
-    uint8_t data_on_bus;  // Data currently on the bus
-    uint16_t cur_abb_add; // Current abbsolute address
-    uint16_t cur_rel_add; // Current abbsolute address
+    uint8_t opcode;             // Current opcode
+    uint8_t data_bus;           // Data currently on the bus
+    uint16_t address;           // Current abbsolute address
+    uint16_t relative_adderess; // Current abbsolute address
 
     bool accumulator_addressing;
 
