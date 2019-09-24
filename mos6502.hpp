@@ -33,7 +33,7 @@ class MOS6502 {
     enum status_flag_t {
         N = (1 << 7),   // N:  NEGATIVE             1 = Neg
         O = (1 << 6),   // O:  OVERFLOW             1 = True
-        //                 -
+        U = (1 << 5),   // -   UNUSED stay on 1
         B = (1 << 4),   // B:  BRK COMMAND
         D = (1 << 3),   // D:  DECIMAL MODE         1 = True
         I = (1 << 2),   // I:  IRQ DISABLE          1 = Disable
@@ -53,12 +53,13 @@ class MOS6502 {
     // Private inner status
     Bus *bus;
 
-    unsigned int cycles_count;
-    unsigned int cycles_needed;
+    unsigned int cycles;
     uint8_t opcode;       // Current opcode
-    uint8_t fetched;      // Last value read from memory
+    uint8_t data_on_bus;  // Data currently on the bus
     uint16_t cur_abb_add; // Current abbsolute address
     uint16_t cur_rel_add; // Current abbsolute address
+
+    bool accumulator_addressing;
 
     uint16_t tmp_buff;    // Temporary 16-bit buffer
 
@@ -69,7 +70,7 @@ class MOS6502 {
     void set_flag(const status_flag_t flag, const bool val);
     bool read_flag(const status_flag_t flag);
     void mem_fetch();
-    void mem_write(uint16_t address, uint8_t data);
+    void mem_write();
 
   public:
     MOS6502(Bus *b);

@@ -11,7 +11,7 @@ Console::Console() : print_mem_page(0) {
         for (unsigned int i = 0; i < WIDTH; i++) {
             display[j][i] = EMPTY;
 
-            if (j == 0 || i == WIDTH - 1 || j == HEIGHT - 1) {
+            if (j == 0 || i == WIDTH - 1 || j == CONTENT_HEIGHT - 1 || j == HEIGHT - 1) {
                 display[j][i] = '*';
             }
         }
@@ -39,12 +39,13 @@ bool Console::frame(p_state_t &state, uint8_t *p_mem, const size_t size) {
 
 void Console::draw_memory() {
 
-    size_t from = print_mem_page * 255;
-    size_t to = from + 255;
+    size_t from = print_mem_page * 256;
+    size_t to = from + 256;
 
     size_t line = HEADER_HEIGHT;
 
     buff = "PAGE: ";
+
     if (print_mem_page < 10) {
         buff += "00";
     } else if (print_mem_page < 100) {
@@ -62,10 +63,14 @@ void Console::draw_memory() {
 
         for (size_t j = 0; j < MEM_WIDTH; j++, i++) {
 
-            if (i == current_state.cur_abb_add) {
-                sprintf(&(display[line][col]), "[%02X", mem[i]);
-            } else {
-                sprintf(&(display[line][col]), " %02X", mem[i]);
+            sprintf(&(display[line][col]), " %02X", mem[i]);
+
+            if (i == current_state.cur_abb_add && i == current_state.PC) {
+                sprintf(&(display[line][col]), "#%02X", mem[i]);
+            } else if (i == current_state.cur_abb_add) {
+                sprintf(&(display[line][col]), "$%02X", mem[i]);
+            } else if (i == current_state.PC) {
+                sprintf(&(display[line][col]), "*%02X", mem[i]);
             }
 
             col += 3;
@@ -137,8 +142,9 @@ void Console::draw_status() {
 
     // Fetched
     line++;
-    buff = "FE: [" + uint8_to_bin(current_state.fetched) + "]         XXXX";
-    sprintf(&(buff[23]), "0x%02X", current_state.fetched);
+    col = STATUS_X - 2;
+    buff = "BUS: [" + uint8_to_bin(current_state.data_on_bus) + "]         XXXX";
+    sprintf(&(buff[24]), "0x%02X", current_state.data_on_bus);
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
     // Current abbsolute address
@@ -164,20 +170,35 @@ void Console::draw_status() {
     line += 2;
     col = STATUS_X;
     buff = "CYCL N: ";
+
     if (current_state.cycles_count < 10) {
         buff += "0";
     }
+
     buff += std::to_string(current_state.cycles_count) + "   CYCL NEED: ";
+
     if (current_state.cycles_needed < 10) {
         buff += "0";
     }
+
     buff += std::to_string(current_state.cycles_needed);
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 }
 
 
 void Console::draw_logs() {
-    return;
+    size_t lin = CONTENT_HEIGHT;
+    size_t limit = WIDTH - 1;
+
+    for (size_t i = 0; i < LOG_LINES; i++) {
+        // Clear the line
+        memset(&(display[lin + i][0]), EMPTY, limit);
+
+        // Write the log
+        size_t to_draw = (log_head + i) % LOG_LINES;
+        size_t size = (logs[to_draw].length() > limit) ? limit : logs[to_draw].length();
+        memcpy(&(display[lin + i][0]), &(logs[to_draw][0]), size);
+    }
 }
 
 
@@ -197,37 +218,37 @@ bool Console::get_input() {
         scanf(" %c", &in);
 
         switch (in) {
-        case 'c':
+        case 'c':   // Next clock tick
         case 'C':
             return true;
 
-        case 'n':
+        case 'n':   // Next mem page
         case 'N':
-            if (print_mem_page < 0xFFFF) {
+            if (print_mem_page < 0x00FF) {
                 print_mem_page++;
                 draw_memory();
-                show();
             }
 
             break;
 
-        case 'b':
+        case 'b':   // Previous meme page
         case 'B':
             if (print_mem_page > 0) {
                 print_mem_page--;
                 draw_memory();
-                show();
             }
 
             break;
 
-        case 'q':
+        case 'q':   // Quit
         case 'Q':
             return false;
 
         default:
             break;
         }
+
+        show();
     }
 
     return false;
@@ -238,6 +259,17 @@ void Console::set_header_line_2(const char *str, size_t size) {
     memcpy(&(display[1][0]), str, size);
 }
 
+
 void Console::set_header_line_3(const char *str, size_t size) {
     memcpy(&(display[2][0]), str, size);
+}
+
+
+void Console::push_log(const std::string &str) {
+    logs[log_head] = str;
+    log_head++;
+
+    if (log_head == LOG_LINES) {
+        log_head = 0;
+    }
 }

@@ -4,7 +4,7 @@
 
 MOS6502::MOS6502(Bus *b) :
     A(0x00), X(0x00), Y(0x00), PC(0x0000), S(0x00), P(0x00), bus(b),
-    cycles_count(0), cycles_needed(0) {
+    cycles(0), accumulator_addressing(false) {
 
     if (bus == nullptr) {
         log_e("Bus is nullptr");
@@ -27,31 +27,137 @@ bool MOS6502::read_flag(const status_flag_t flag) {
 
 
 void MOS6502::mem_fetch() {
-    bus->access(cur_abb_add, Bus::READ, fetched);
+    if (accumulator_addressing) {
+        data_on_bus = A;
+        accumulator_addressing = false;
+    } else {
+        bus->access(cur_abb_add, Bus::READ, data_on_bus);
+    }
 }
 
-
-void MOS6502::mem_write(uint16_t address, uint8_t data) {
-    bus->access(address, Bus::WRITE, data);
+void MOS6502::mem_write() {
+    bus->access(cur_abb_add, Bus::WRITE, data_on_bus);
 }
 
 
 void MOS6502::clock() {
-    if (cycles_count == cycles_needed) {
-        cur_abb_add = PC;
-        mem_fetch();
-        opcode = fetched;
-        PC++;
+    if (cycles == 0) {
 
-        cycles_needed = opcode_table[opcode].cycles;
-        cycles_count = 1;
-    } else {
-        (this->*opcode_table[opcode].addrmode)();
-        (this->*opcode_table[opcode].operation)();
+        cur_abb_add = PC++;
+        mem_fetch();
+        opcode = data_on_bus;
+
+        cycles = opcode_table[opcode].cycles;
+
+        bool add = (this->*opcode_table[opcode].addrmode)();
+        bool opp = (this->*opcode_table[opcode].operation)();
+
+        if (opp & add) {
+            cycles += 2;
+        } else if (opp || add) {
+            cycles++;
+        }
+
+        // Always set the unused status flag bit to 1
+        set_flag(U, true);
     }
 
-    cycles_count++;
+    cycles++;
 }
+
+
+void MOS6502::reset() {
+    // Reset registers
+    A = 0x00;
+    X = 0x00;
+    Y = 0x00;
+
+    S = 0xFD;
+    P = 0x00 | U;
+
+    // Read from fix mem address to jump to programmable location
+    cur_abb_add = 0xFFFC;
+    mem_fetch();
+    tmp_buff = data_on_bus & 0x00FF;
+    cur_abb_add++;
+    mem_fetch();
+    PC = (((uint16_t)data_on_bus) << 8) | tmp_buff;
+
+    // Clear helpers
+    cur_rel_add = 0x0000;
+    cur_abb_add = 0x0000;
+    data_on_bus = 0x00;
+    accumulator_addressing = false;
+
+    cycles = 8;
+}
+
+
+void MOS6502::irq() {   // Read from 0xFFFE
+    if (read_flag(I) == false) {
+        // Push PC on the stack
+        // Write first the high because the stack decrease
+        cur_abb_add = 0x0100 + S--;
+        data_on_bus = (PC >> 8) & 0x00FF;
+        mem_write();    // write high byte
+
+        cur_abb_add = 0x0100 + S--;
+        data_on_bus = PC & 0x00FF;
+        mem_write();    // write low byte
+
+        // Push status on stack
+        set_flag(B, 0);
+        set_flag(U, 1);
+        set_flag(I, 1);
+
+        data_on_bus = P;
+        cur_abb_add = 0x0100 + S--;
+        mem_write();
+
+        // Read new PC from the fixed location
+        cur_abb_add = 0xFFFE;
+        mem_fetch();
+        tmp_buff = data_on_bus & 0x00FF;
+        cur_abb_add++;
+        mem_fetch();
+        PC = (((uint16_t)data_on_bus) << 8) | tmp_buff;
+
+        cycles = 7;
+    }
+}
+
+
+void MOS6502::nmi() {   // Read from 0xFFFA
+    // Push PC on the stack
+    // Write first the high because the stack decrease
+    cur_abb_add = 0x0100 + S--;
+    data_on_bus = (PC >> 8) & 0x00FF;
+    mem_write();    // write high byte
+
+    cur_abb_add = 0x0100 + S--;
+    data_on_bus = PC & 0x00FF;
+    mem_write();    // write low byte
+
+    // Push status on stack
+    set_flag(B, 0);
+    set_flag(U, 1);
+    set_flag(I, 1);
+
+    data_on_bus = P;
+    cur_abb_add = 0x0100 + S--;
+    mem_write();
+
+    // Read new PC from the fixed location
+    cur_abb_add = 0xFFFA;
+    mem_fetch();
+    tmp_buff = data_on_bus & 0x00FF;
+    cur_abb_add++;
+    mem_fetch();
+    PC = (((uint16_t)data_on_bus) << 8) | tmp_buff;
+
+    cycles = 8;
+}
+
 
 p_state_t MOS6502::get_status() {
     p_state_t state;
@@ -72,14 +178,14 @@ p_state_t MOS6502::get_status() {
     state.opcode_name = opcode_table[opcode].name;
     state.opcode = opcode;
 
-    state.fetched = fetched;
+    state.data_on_bus = data_on_bus;
     state.cur_abb_add = cur_abb_add;
     state.cur_rel_add = cur_rel_add;
 
     state.tmp_buff = tmp_buff;
 
-    state.cycles_count = cycles_count;
-    state.cycles_needed = cycles_needed;
+    state.cycles_count = cycles;
+    state.cycles_needed = opcode_table[opcode].cycles;
 
     return state;
 }
@@ -89,56 +195,55 @@ p_state_t MOS6502::get_status() {
  *                  ADDRESSING MODES                    *
  ********************************************************/
 bool MOS6502::ACC() {   // DONE
-    fetched = A;
+    accumulator_addressing = true;
     return false;
 }
 
 bool MOS6502::IMM() {   // DONE
     cur_abb_add = PC++;
-    // mem_fetch();
     return false;
 }
 
 bool MOS6502::ABS() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    tmp_buff = fetched & 0x00FF;
+    tmp_buff = data_on_bus & 0x00FF;
     cur_abb_add = PC++;
     mem_fetch();
-    cur_abb_add = (fetched << 8) | tmp_buff;
+    cur_abb_add = (((uint16_t)data_on_bus) << 8) | tmp_buff;
     return false;
 }
 
 bool MOS6502::ZPI() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    cur_abb_add = fetched & 0x00FF;
+    cur_abb_add = data_on_bus & 0x00FF;
     return false;
 }
 
 bool MOS6502::ZPX() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    cur_abb_add = (fetched + X) & 0x00FF;
+    cur_abb_add = (data_on_bus + X) & 0x00FF;
     return false;
 }
 
 bool MOS6502::ZPY() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    cur_abb_add = (fetched + Y) & 0x00FF;
+    cur_abb_add = (data_on_bus + Y) & 0x00FF;
     return false;
 }
 
 bool MOS6502::ABX() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    tmp_buff = fetched & 0x00FF;
+    tmp_buff = data_on_bus & 0x00FF;
     cur_abb_add = PC++;
     mem_fetch();
-    cur_abb_add = ((fetched << 8) | tmp_buff) + X;
+    cur_abb_add = ((((uint16_t)data_on_bus) << 8) | tmp_buff) + X;
 
-    if ((cur_abb_add & 0xFF00) != (fetched << 8)) {
+    if ((cur_abb_add & 0xFF00) != (((uint16_t)data_on_bus) << 8)) {
         return true;
     }
 
@@ -148,12 +253,12 @@ bool MOS6502::ABX() {   // DONE
 bool MOS6502::ABY() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    tmp_buff = fetched & 0x00FF;
+    tmp_buff = data_on_bus & 0x00FF;
     cur_abb_add = PC++;
     mem_fetch();
-    cur_abb_add = ((fetched << 8) | tmp_buff) + Y;
+    cur_abb_add = ((((uint16_t)data_on_bus) << 8) | tmp_buff) + Y;
 
-    if ((cur_abb_add & 0xFF00) != (fetched << 8)) {
+    if ((cur_abb_add & 0xFF00) != (((uint16_t)data_on_bus) << 8)) {
         return true;
     }
 
@@ -161,13 +266,14 @@ bool MOS6502::ABY() {   // DONE
 }
 
 bool MOS6502::IMP() {   // DONE
+    accumulator_addressing = true;  //  TODO(max): is this correct?
     return false;
 }
 
 bool MOS6502::REL() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    cur_rel_add = fetched & 0x00FF;
+    cur_rel_add = data_on_bus & 0x00FF;
 
     if (cur_rel_add & 0x80) {   // if cur_rel_add >= 128
         cur_rel_add |= 0xFF00;  // the this is negative offset
@@ -176,47 +282,47 @@ bool MOS6502::REL() {   // DONE
     return false;
 }
 
-bool MOS6502::IIX() {
+bool MOS6502::IIX() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    cur_abb_add = ((uint16_t)fetched + (uint16_t)X) & 0x00FF;
+    cur_abb_add = ((uint16_t)data_on_bus + (uint16_t)X) & 0x00FF;
     mem_fetch();
-    tmp_buff = fetched & 0x00FF;
+    tmp_buff = data_on_bus & 0x00FF;
     cur_abb_add++;
     mem_fetch();
-    cur_abb_add = ((((uint16_t)fetched) << 8) & 0xFF00) | tmp_buff;
+    cur_abb_add = ((((uint16_t)data_on_bus) << 8) & 0xFF00) | tmp_buff;
 
     return false;
 }
 
-bool MOS6502::IIY() {
+bool MOS6502::IIY() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    cur_abb_add = fetched & 0x00FF;
+    cur_abb_add = data_on_bus & 0x00FF;
     mem_fetch();
-    tmp_buff = fetched & 0x00FF;
+    tmp_buff = data_on_bus & 0x00FF;
     cur_abb_add++;
     mem_fetch();
-    cur_abb_add = (((((uint16_t)fetched) << 8) & 0xFF00) | tmp_buff) + Y;
+    cur_abb_add = (((((uint16_t)data_on_bus) << 8) & 0xFF00) | tmp_buff) + Y;
 
-    if ((cur_abb_add & 0xFF00) != (fetched << 8)) {
+    if ((cur_abb_add & 0xFF00) != (((uint16_t)data_on_bus) << 8)) {
         return true;
     }
 
     return false;
 }
 
-bool MOS6502::IND() {
+bool MOS6502::IND() {   // DONE
     cur_abb_add = PC++;
     mem_fetch();
-    tmp_buff = fetched & 0x00FF;
+    tmp_buff = data_on_bus & 0x00FF;
     cur_abb_add = PC++;
     mem_fetch();
-    tmp_buff = (((uint16_t)fetched) << 8) | tmp_buff;
+    tmp_buff = (((uint16_t)data_on_bus) << 8) | tmp_buff;
 
     cur_abb_add = tmp_buff;
     mem_fetch();
-    tmp_buff = fetched & 0x00FF;
+    tmp_buff = data_on_bus & 0x00FF;
 
     if (tmp_buff == 0x00FF) {    // Page boundary hardware bug
         cur_abb_add &= 0xFF00;
@@ -225,7 +331,7 @@ bool MOS6502::IND() {
     }
 
     mem_fetch();
-    cur_abb_add = (((uint16_t)fetched) << 8) | tmp_buff;
+    cur_abb_add = (((uint16_t)data_on_bus) << 8) | tmp_buff;
 
     return false;
 }
@@ -238,12 +344,12 @@ bool MOS6502::ADC() {   // DONE
     mem_fetch();
 
     // add is done in 16bit mode to catch the carry bit
-    tmp_buff = (uint16_t)A + (uint16_t)fetched + (read_flag(C) ? 0x0001 : 0x0000);
+    tmp_buff = (uint16_t)A + (uint16_t)data_on_bus + (read_flag(C) ? 0x0001 : 0x0000);
 
     set_flag(C, tmp_buff > 0x00FF);                 // Set the carry bit
     set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);     // Set Zero bit
     // Set Overflow bit
-    set_flag(O, (~((uint16_t)(A ^ fetched) & 0x00FF) & ((uint16_t)A ^ tmp_buff) & 0x0080));
+    set_flag(O, (~((uint16_t)(A ^ data_on_bus) & 0x00FF) & ((uint16_t)A ^ tmp_buff) & 0x0080));
     set_flag(N, tmp_buff & 0x80);                   // Set the Negative bit
 
     A = tmp_buff & 0x00FF;
@@ -253,25 +359,27 @@ bool MOS6502::ADC() {   // DONE
 
 bool MOS6502::AND() {   // DONE
     mem_fetch();
-    A = A & fetched;
+    A = A & data_on_bus;
 
     set_flag(Z, A == 0x00);
     set_flag(N, A & 0x80);
     return true;
 }
 
-bool MOS6502::ASL() {
+bool MOS6502::ASL() {   // DONE
+    mem_fetch();
+
     return true;
 }
 
 bool MOS6502::BCC() {   // DONE
     if (read_flag(C) == false) {
-        cycles_needed++;
+        cycles++;
 
         cur_abb_add = PC + cur_rel_add;
 
         if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
-            cycles_needed++;
+            cycles++;
         }
 
         PC = cur_abb_add;
@@ -282,12 +390,12 @@ bool MOS6502::BCC() {   // DONE
 
 bool MOS6502::BCS() {   // DONE
     if (read_flag(C)) {
-        cycles_needed++;
+        cycles++;
 
         cur_abb_add = PC + cur_rel_add;
 
         if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
-            cycles_needed++;
+            cycles++;
         }
 
         PC = cur_abb_add;
@@ -298,12 +406,12 @@ bool MOS6502::BCS() {   // DONE
 
 bool MOS6502::BEQ() {   // DONE
     if (read_flag(Z)) {
-        cycles_needed++;
+        cycles++;
 
         cur_abb_add = PC + cur_rel_add;
 
         if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
-            cycles_needed++;
+            cycles++;
         }
 
         PC = cur_abb_add;
@@ -318,12 +426,12 @@ bool MOS6502::BIT() {
 
 bool MOS6502::BMI() {   // DONE
     if (read_flag(N)) {
-        cycles_needed++;
+        cycles++;
 
         cur_abb_add = PC + cur_rel_add;
 
         if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
-            cycles_needed++;
+            cycles++;
         }
 
         PC = cur_abb_add;
@@ -334,12 +442,12 @@ bool MOS6502::BMI() {   // DONE
 
 bool MOS6502::BNE() {   // DONE
     if (read_flag(Z) == false) {
-        cycles_needed++;
+        cycles++;
 
         cur_abb_add = PC + cur_rel_add;
 
         if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
-            cycles_needed++;
+            cycles++;
         }
 
         PC = cur_abb_add;
@@ -350,12 +458,12 @@ bool MOS6502::BNE() {   // DONE
 
 bool MOS6502::BPL() {   // DONE
     if (read_flag(N) == false) {
-        cycles_needed++;
+        cycles++;
 
         cur_abb_add = PC + cur_rel_add;
 
         if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
-            cycles_needed++;
+            cycles++;
         }
 
         PC = cur_abb_add;
@@ -370,12 +478,12 @@ bool MOS6502::BRK() {
 
 bool MOS6502::BVC() {   // DONE
     if (read_flag(O) == false) {
-        cycles_needed++;
+        cycles++;
 
         cur_abb_add = PC + cur_rel_add;
 
         if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
-            cycles_needed++;
+            cycles++;
         }
 
         PC = cur_abb_add;
@@ -386,12 +494,12 @@ bool MOS6502::BVC() {   // DONE
 
 bool MOS6502::BVS() {   // DONE
     if (read_flag(O)) {
-        cycles_needed++;
+        cycles++;
 
         cur_abb_add = PC + cur_rel_add;
 
         if ((cur_abb_add && 0xFF00) != (PC & 0xFF00)) {
-            cycles_needed++;
+            cycles++;
         }
 
         PC = cur_abb_add;

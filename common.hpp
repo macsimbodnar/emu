@@ -20,7 +20,7 @@ struct p_state_t {
     std::string opcode_name;
     uint8_t opcode;
 
-    uint8_t fetched;
+    uint8_t data_on_bus;
 
     uint16_t cur_abb_add;
     uint16_t cur_rel_add;
