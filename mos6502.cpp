@@ -3,7 +3,7 @@
 
 
 MOS6502::MOS6502(Bus *b) :
-    A(0x00), X(0x00), Y(0x00), PC(0x0000), S(0x00), P(0x00), bus(b),
+    A(0x00), X(0x00), Y(0x00), PC(0x0000), S(0xFD), P(0x00), bus(b),
     cycles(0), accumulator_addressing(false) {
 
     if (bus == nullptr) {
@@ -62,7 +62,8 @@ void MOS6502::clock() {
         set_flag(U, true);
     }
 
-    cycles--;
+    // cycles--;
+    cycles = 0;
 }
 
 
@@ -165,10 +166,12 @@ p_state_t MOS6502::get_status() {
     state.A = A;
     state.X = X;
     state.Y = Y;
+    state.S = S;
     state.PC = PC;
 
     state.N = read_flag(N);
     state.O = read_flag(O);
+    state.U = read_flag(U);
     state.B = read_flag(B);
     state.D = read_flag(D);
     state.I = read_flag(I);
@@ -266,7 +269,6 @@ bool MOS6502::ABY() {   // DONE
 }
 
 bool MOS6502::IMP() {   // DONE
-    accumulator_addressing = true;  //  TODO(max): is this correct?
     return false;
 }
 
@@ -282,7 +284,7 @@ bool MOS6502::REL() {   // DONE
     return false;
 }
 
-bool MOS6502::IIX() {   // DONE
+bool MOS6502::IIX() {   // DONEADC
     address = PC++;
     mem_fetch();
     address = ((uint16_t)data_bus + (uint16_t)X) & 0x00FF;
@@ -368,8 +370,21 @@ bool MOS6502::AND() {   // DONE
 
 bool MOS6502::ASL() {   // DONE
     mem_fetch();
+    tmp_buff = ((uint16_t)data_bus) << 1;
 
-    return true;
+    set_flag(C, (tmp_buff & 0xFF00) > 0);
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x00);
+    set_flag(N, tmp_buff & 0x80);
+
+    if (accumulator_addressing) {
+        A = tmp_buff & 0x00FF;
+        accumulator_addressing = false;
+    } else {
+        data_bus = tmp_buff & 0x00FF;
+        mem_write();
+    }
+
+    return false;
 }
 
 bool MOS6502::BCC() {   // DONE
@@ -420,8 +435,15 @@ bool MOS6502::BEQ() {   // DONE
     return false;
 }
 
-bool MOS6502::BIT() {
-    return true;
+bool MOS6502::BIT() {   // DONE
+    mem_fetch();
+    tmp_buff = A & data_bus;
+
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x00);
+    set_flag(N, data_bus & (1 << 7));
+    set_flag(O, data_bus & (1 << 6));
+
+    return false;
 }
 
 bool MOS6502::BMI() {   // DONE
@@ -472,7 +494,7 @@ bool MOS6502::BPL() {   // DONE
     return false;
 }
 
-bool MOS6502::BRK() {
+bool MOS6502::BRK() {   // DONE
     PC++;
 
     set_flag(I, true);
@@ -569,11 +591,19 @@ bool MOS6502::DEC() {
 }
 
 bool MOS6502::DEX() {
-    return true;
+    X--;
+    set_flag(Z, X == 0x00);
+    set_flag(N, X & 0x80);
+
+    return false;
 }
 
-bool MOS6502::DEY() {
-    return true;
+bool MOS6502::DEY() {   // DONE
+    Y--;
+    set_flag(Z, Y == 0x00);
+    set_flag(N, Y & 0x80);
+
+    return false;
 }
 
 bool MOS6502::EOR() {
@@ -600,15 +630,33 @@ bool MOS6502::JSR() {
     return true;
 }
 
-bool MOS6502::LDA() {
+bool MOS6502::LDA() {   // DONE
+    mem_fetch();
+    A = data_bus;
+
+    set_flag(Z, A == 0x00);
+    set_flag(N, A & 0x80);
+
     return true;
 }
 
-bool MOS6502::LDX() {
+bool MOS6502::LDX() {   // DONE
+    mem_fetch();
+    X = data_bus;
+
+    set_flag(Z, X == 0x00);
+    set_flag(N, X & 0x80);
+
     return true;
 }
 
-bool MOS6502::LDY() {
+bool MOS6502::LDY() {   // DONE
+    mem_fetch();
+    Y = data_bus;
+
+    set_flag(Z, Y == 0x00);
+    set_flag(N, Y & 0x80);
+
     return true;
 }
 
@@ -676,12 +724,18 @@ bool MOS6502::STA() {
     return true;
 }
 
-bool MOS6502::STX() {
-    return true;
+bool MOS6502::STX() {   // DONE
+    data_bus = X;
+    mem_write();
+
+    return false;
 }
 
-bool MOS6502::STY() {
-    return true;
+bool MOS6502::STY() {   // DONE
+    data_bus = Y;
+    mem_write();
+
+    return false;
 }
 
 bool MOS6502::TAX() {

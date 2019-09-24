@@ -97,7 +97,7 @@ void Console::draw_status() {
     line++;
     buff = std::string(current_state.N ? "1 " : "0 ") +
            (current_state.O ? "1 " : "0 ") +
-           "- " +
+           (current_state.U ? "1 " : "0 ") +
            (current_state.B ? "1 " : "0 ") +
            (current_state.D ? "1 " : "0 ") +
            (current_state.I ? "1 " : "0 ") +
@@ -123,6 +123,12 @@ void Console::draw_status() {
     line++;
     buff = "Y: [" + uint8_to_bin(current_state.Y) + "]         XXXX";
     sprintf(&(buff[22]), "0x%02X", current_state.Y);
+    memcpy(&(display[line][col]), &(buff[0]), buff.length());
+
+    // S register
+    line++;
+    buff = "S: [" + uint8_to_bin(current_state.S) + "]         XXXX";
+    sprintf(&(buff[22]), "0x%02X", current_state.S);
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
     // PC
@@ -167,7 +173,7 @@ void Console::draw_status() {
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
     // Cycle counters
-    line += 2;
+    line ++;
     col = STATUS_X;
     buff = "CYCL N: ";
 

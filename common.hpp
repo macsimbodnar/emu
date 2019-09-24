@@ -7,10 +7,12 @@ struct p_state_t {
     uint8_t A;
     uint8_t X;
     uint8_t Y;
+    uint8_t S;
     uint16_t PC;
 
     bool N;
     bool O;
+    bool U;
     bool B;
     bool D;
     bool I;
