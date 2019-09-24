@@ -846,7 +846,7 @@ bool MOS6502::ROR() {   // DONE
     return false;
 }
 
-bool MOS6502::RTI() {
+bool MOS6502::RTI() {   // DONE
     S++;
     address = 0x0100 + S;
     mem_read();
@@ -868,7 +868,7 @@ bool MOS6502::RTI() {
     return false;
 }
 
-bool MOS6502::RTS() {
+bool MOS6502::RTS() {   // DONE
     S++;
     address = 0x0100 + S;
     mem_read();
@@ -883,24 +883,41 @@ bool MOS6502::RTS() {
     return false;
 }
 
-bool MOS6502::SBC() {
+// A = A - M - (1 - C)  ->  A = A + -1 * (M - (1 - C))  ->  A = A + (-M + 1 + C)
+bool MOS6502::SBC() {   // DONE
+    mem_read();
+
+    uint16_t tv = (uint16_t)data_bus ^ 0x00FF;
+    tmp_buff = (uint16_t)A + tv + (read_flag(C) ? 0x0001 : 0x0000);
+    set_flag(C, tmp_buff & 0xFF00);
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
+    set_flag(O, (tmp_buff ^ (uint16_t)A) & (tmp_buff ^ tv) & 0x0080);
+    set_flag(N, tmp_buff & 0x0080);
+    A = tmp_buff & 0x00FF;
+
     return true;
 }
 
-bool MOS6502::SEC() {
-    return true;
+bool MOS6502::SEC() {   // DONE
+    set_flag(C, true);
+    return false;
 }
 
-bool MOS6502::SED() {
-    return true;
+bool MOS6502::SED() {   // DONE
+    set_flag(D, true);
+    return false;
 }
 
-bool MOS6502::SEI() {
-    return true;
+bool MOS6502::SEI() {   // DON
+    set_flag(I, true);
+    return false;
 }
 
-bool MOS6502::STA() {
-    return true;
+bool MOS6502::STA() {   // DONE
+    data_bus = A;
+    mem_write();
+
+    return false;
 }
 
 bool MOS6502::STX() {   // DONE
@@ -917,30 +934,52 @@ bool MOS6502::STY() {   // DONE
     return false;
 }
 
-bool MOS6502::TAX() {
-    return true;
+bool MOS6502::TAX() {   // DONE
+    X = A;
+    set_flag(Z, X == 0x00);
+    set_flag(N, X & 0x80);
+
+    return false;
 }
 
-bool MOS6502::TAY() {
-    return true;
+bool MOS6502::TAY() {   // DONE
+    Y = A;
+    set_flag(Z, Y == 0x00);
+    set_flag(N, Y & 0x80);
+
+    return false;
 }
 
-bool MOS6502::TSX() {
-    return true;
+bool MOS6502::TSX() {   // DONE
+    X = S;
+    set_flag(Z, X == 0x00);
+    set_flag(N, X & 0x80);
+
+    return false;
 }
 
-bool MOS6502::TXA() {
-    return true;
+bool MOS6502::TXA() {   // DONE
+    A = X;
+    set_flag(Z, A == 0x00);
+    set_flag(N, A & 0x80);
+
+    return false;
 }
 
-bool MOS6502::TXS() {
-    return true;
+bool MOS6502::TXS() {   // DONE
+    S = X;
+    return false;
 }
 
 bool MOS6502::TYA() {
-    return true;
+    A = Y;
+    set_flag(Z, A == 0x00);
+    set_flag(N, A & 0x80);
+
+    return false;
 }
 
 bool MOS6502::XXX() {
-    return true;
+    log_e("Executed illegal opcode");
+    return false;
 }
