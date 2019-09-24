@@ -26,10 +26,9 @@ bool MOS6502::read_flag(const status_flag_t flag) {
 }
 
 
-void MOS6502::mem_fetch() {
-    if (accumulator_addressing) {
+void MOS6502::mem_read() {
+    if (is_ACC()) {
         data_bus = A;
-        accumulator_addressing = false;
     } else {
         bus->access(address, Bus::READ, data_bus);
     }
@@ -44,7 +43,7 @@ void MOS6502::clock() {
     if (cycles == 0) {
 
         address = PC++;
-        mem_fetch();
+        mem_read();
         opcode = data_bus;
 
         cycles = opcode_table[opcode].cycles;
@@ -78,10 +77,10 @@ void MOS6502::reset() {
 
     // Read from fix mem address to jump to programmable location
     address = 0xFFFC;
-    mem_fetch();
+    mem_read();
     tmp_buff = data_bus & 0x00FF;
     address++;
-    mem_fetch();
+    mem_read();
     PC = (((uint16_t)data_bus) << 8) | tmp_buff;
 
     // Clear helpers
@@ -117,10 +116,10 @@ void MOS6502::irq() {   // Read from 0xFFFE
 
         // Read new PC from the fixed location
         address = 0xFFFE;
-        mem_fetch();
+        mem_read();
         tmp_buff = data_bus & 0x00FF;
         address++;
-        mem_fetch();
+        mem_read();
         PC = (((uint16_t)data_bus) << 8) | tmp_buff;
 
         cycles = 7;
@@ -150,13 +149,23 @@ void MOS6502::nmi() {   // Read from 0xFFFA
 
     // Read new PC from the fixed location
     address = 0xFFFA;
-    mem_fetch();
+    mem_read();
     tmp_buff = data_bus & 0x00FF;
     address++;
-    mem_fetch();
+    mem_read();
     PC = (((uint16_t)data_bus) << 8) | tmp_buff;
 
     cycles = 8;
+}
+
+
+bool MOS6502::is_ACC() {
+    if (accumulator_addressing) {
+        accumulator_addressing = false;
+        return true;
+    }
+
+    return false;
 }
 
 
@@ -209,41 +218,41 @@ bool MOS6502::IMM() {   // DONE
 
 bool MOS6502::ABS() {   // DONE
     address = PC++;
-    mem_fetch();
+    mem_read();
     tmp_buff = data_bus & 0x00FF;
     address = PC++;
-    mem_fetch();
+    mem_read();
     address = (((uint16_t)data_bus) << 8) | tmp_buff;
     return false;
 }
 
 bool MOS6502::ZPI() {   // DONE
     address = PC++;
-    mem_fetch();
+    mem_read();
     address = data_bus & 0x00FF;
     return false;
 }
 
 bool MOS6502::ZPX() {   // DONE
     address = PC++;
-    mem_fetch();
+    mem_read();
     address = (data_bus + X) & 0x00FF;
     return false;
 }
 
 bool MOS6502::ZPY() {   // DONE
     address = PC++;
-    mem_fetch();
+    mem_read();
     address = (data_bus + Y) & 0x00FF;
     return false;
 }
 
 bool MOS6502::ABX() {   // DONE
     address = PC++;
-    mem_fetch();
+    mem_read();
     tmp_buff = data_bus & 0x00FF;
     address = PC++;
-    mem_fetch();
+    mem_read();
     address = ((((uint16_t)data_bus) << 8) | tmp_buff) + X;
 
     if ((address & 0xFF00) != (((uint16_t)data_bus) << 8)) {
@@ -255,10 +264,10 @@ bool MOS6502::ABX() {   // DONE
 
 bool MOS6502::ABY() {   // DONE
     address = PC++;
-    mem_fetch();
+    mem_read();
     tmp_buff = data_bus & 0x00FF;
     address = PC++;
-    mem_fetch();
+    mem_read();
     address = ((((uint16_t)data_bus) << 8) | tmp_buff) + Y;
 
     if ((address & 0xFF00) != (((uint16_t)data_bus) << 8)) {
@@ -274,7 +283,7 @@ bool MOS6502::IMP() {   // DONE
 
 bool MOS6502::REL() {   // DONE
     address = PC++;
-    mem_fetch();
+    mem_read();
     relative_adderess = data_bus & 0x00FF;
 
     if (relative_adderess & 0x80) {   // if relative_adderess >= 128
@@ -286,12 +295,12 @@ bool MOS6502::REL() {   // DONE
 
 bool MOS6502::IIX() {   // DONEADC
     address = PC++;
-    mem_fetch();
+    mem_read();
     address = ((uint16_t)data_bus + (uint16_t)X) & 0x00FF;
-    mem_fetch();
+    mem_read();
     tmp_buff = data_bus & 0x00FF;
     address++;
-    mem_fetch();
+    mem_read();
     address = ((((uint16_t)data_bus) << 8) & 0xFF00) | tmp_buff;
 
     return false;
@@ -299,12 +308,12 @@ bool MOS6502::IIX() {   // DONEADC
 
 bool MOS6502::IIY() {   // DONE
     address = PC++;
-    mem_fetch();
+    mem_read();
     address = data_bus & 0x00FF;
-    mem_fetch();
+    mem_read();
     tmp_buff = data_bus & 0x00FF;
     address++;
-    mem_fetch();
+    mem_read();
     address = (((((uint16_t)data_bus) << 8) & 0xFF00) | tmp_buff) + Y;
 
     if ((address & 0xFF00) != (((uint16_t)data_bus) << 8)) {
@@ -316,14 +325,14 @@ bool MOS6502::IIY() {   // DONE
 
 bool MOS6502::IND() {   // DONE
     address = PC++;
-    mem_fetch();
+    mem_read();
     tmp_buff = data_bus & 0x00FF;
     address = PC++;
-    mem_fetch();
+    mem_read();
     tmp_buff = (((uint16_t)data_bus) << 8) | tmp_buff;
 
     address = tmp_buff;
-    mem_fetch();
+    mem_read();
     tmp_buff = data_bus & 0x00FF;
 
     if (tmp_buff == 0x00FF) {    // Page boundary hardware bug
@@ -332,7 +341,7 @@ bool MOS6502::IND() {   // DONE
         address++;
     }
 
-    mem_fetch();
+    mem_read();
     address = (((uint16_t)data_bus) << 8) | tmp_buff;
 
     return false;
@@ -343,7 +352,7 @@ bool MOS6502::IND() {   // DONE
  *                   INSTRUCTION SET                    *
  ********************************************************/
 bool MOS6502::ADC() {   // DONE
-    mem_fetch();
+    mem_read();
 
     // add is done in 16bit mode to catch the carry bit
     tmp_buff = (uint16_t)A + (uint16_t)data_bus + (read_flag(C) ? 0x0001 : 0x0000);
@@ -360,7 +369,7 @@ bool MOS6502::ADC() {   // DONE
 }
 
 bool MOS6502::AND() {   // DONE
-    mem_fetch();
+    mem_read();
     A = A & data_bus;
 
     set_flag(Z, A == 0x00);
@@ -369,16 +378,15 @@ bool MOS6502::AND() {   // DONE
 }
 
 bool MOS6502::ASL() {   // DONE
-    mem_fetch();
+    mem_read();
     tmp_buff = ((uint16_t)data_bus) << 1;
 
     set_flag(C, (tmp_buff & 0xFF00) > 0);
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x00);
-    set_flag(N, tmp_buff & 0x80);
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
+    set_flag(N, tmp_buff & 0x0080);
 
-    if (accumulator_addressing) {
+    if (is_ACC()) {
         A = tmp_buff & 0x00FF;
-        accumulator_addressing = false;
     } else {
         data_bus = tmp_buff & 0x00FF;
         mem_write();
@@ -436,7 +444,7 @@ bool MOS6502::BEQ() {   // DONE
 }
 
 bool MOS6502::BIT() {   // DONE
-    mem_fetch();
+    mem_read();
     tmp_buff = A & data_bus;
 
     set_flag(Z, (tmp_buff & 0x00FF) == 0x00);
@@ -516,10 +524,10 @@ bool MOS6502::BRK() {   // DONE
 
     // Set PC from address  $FFFE
     address = 0xFFFE;
-    mem_fetch();
+    mem_read();
     tmp_buff = data_bus & 0x00FF;
     address = 0xFFFF;
-    mem_fetch();
+    mem_read();
     PC = ((((uint16_t)data_bus) << 8) & 0xFF00) | tmp_buff;
 
     return false;
@@ -562,35 +570,63 @@ bool MOS6502::CLC() {   // DONE
     return false;
 }
 
-bool MOS6502::CLD() {
+bool MOS6502::CLD() {   //DONE
+    set_flag(D, false);
+    return false;
+}
+
+bool MOS6502::CLI() {   // DONE
+    set_flag(I, false);
+    return false;
+}
+
+bool MOS6502::CLV() {   // DONE
+    set_flag(O, false);
+    return false;
+}
+
+bool MOS6502::CMP() {   // DONE
+    mem_read();
+    tmp_buff = (uint16_t)A - (uint16_t)data_bus;
+    set_flag(C, A >= data_bus);
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
+    set_flag(N, tmp_buff & 0x0080);
+
     return true;
 }
 
-bool MOS6502::CLI() {
-    return true;
+bool MOS6502::CPX() {   // DONE
+    mem_read();
+    tmp_buff = (uint16_t)X - (uint16_t)data_bus;
+    set_flag(C, X >= data_bus);
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
+    set_flag(N, tmp_buff & 0x0080);
+
+    return false;
 }
 
-bool MOS6502::CLV() {
-    return true;
+bool MOS6502::CPY() {   // DONE
+    mem_read();
+    tmp_buff = (uint16_t)Y - (uint16_t)data_bus;
+    set_flag(C, Y >= data_bus);
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
+    set_flag(N, tmp_buff & 0x0080);
+
+    return false;
 }
 
-bool MOS6502::CMP() {
-    return true;
+bool MOS6502::DEC() {   // DONE
+    mem_read();
+    tmp_buff = data_bus - 1;
+    data_bus = tmp_buff & 0x00FF;
+    mem_write();
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
+    set_flag(N, tmp_buff & 0x0080);
+
+    return false;
 }
 
-bool MOS6502::CPX() {
-    return true;
-}
-
-bool MOS6502::CPY() {
-    return true;
-}
-
-bool MOS6502::DEC() {
-    return true;
-}
-
-bool MOS6502::DEX() {
+bool MOS6502::DEX() {   // DONE
     X--;
     set_flag(Z, X == 0x00);
     set_flag(N, X & 0x80);
@@ -606,32 +642,67 @@ bool MOS6502::DEY() {   // DONE
     return false;
 }
 
-bool MOS6502::EOR() {
+bool MOS6502::EOR() {   // DONE
+    mem_read();
+    A = data_bus ^ A;
+    set_flag(Z, A == 0x00);
+    set_flag(N, A & 0x80);
     return true;
 }
 
-bool MOS6502::INC() {
-    return true;
+bool MOS6502::INC() {   // DONE
+    mem_read();
+    tmp_buff = data_bus + 1;
+    data_bus = tmp_buff & 0x00FF;
+    mem_write();
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
+    set_flag(N, tmp_buff & 0x0080);
+
+    return false;
 }
 
-bool MOS6502::INX() {
-    return true;
+bool MOS6502::INX() {   // DONE
+    X++;
+    set_flag(Z, X == 0x00);
+    set_flag(N, X & 0x80);
+
+    return false;
 }
 
-bool MOS6502::INY() {
-    return true;
+bool MOS6502::INY() {   // DONE
+    Y++;
+    set_flag(Z, Y == 0x00);
+    set_flag(N, Y & 0x80);
+
+    return false;
 }
 
-bool MOS6502::JMP() {
-    return true;
+bool MOS6502::JMP() {   // DONE
+    PC = address;
+    return false;
 }
 
-bool MOS6502::JSR() {
-    return true;
+bool MOS6502::JSR() {   // DONE
+    PC--;
+
+    tmp_buff = address;
+
+    data_bus = (PC >> 8) & 0x00FF;
+    address = S--;
+    mem_write();
+
+    data_bus = PC & 0x00FF;
+    address = S--;
+    mem_write();
+
+    address = tmp_buff;
+    PC = address;
+
+    return false;
 }
 
 bool MOS6502::LDA() {   // DONE
-    mem_fetch();
+    mem_read();
     A = data_bus;
 
     set_flag(Z, A == 0x00);
@@ -641,7 +712,7 @@ bool MOS6502::LDA() {   // DONE
 }
 
 bool MOS6502::LDX() {   // DONE
-    mem_fetch();
+    mem_read();
     X = data_bus;
 
     set_flag(Z, X == 0x00);
@@ -651,7 +722,7 @@ bool MOS6502::LDX() {   // DONE
 }
 
 bool MOS6502::LDY() {   // DONE
-    mem_fetch();
+    mem_read();
     Y = data_bus;
 
     set_flag(Z, Y == 0x00);
@@ -660,48 +731,156 @@ bool MOS6502::LDY() {   // DONE
     return true;
 }
 
-bool MOS6502::LSR() {
+bool MOS6502::LSR() {   // DONE
+    mem_read();
+    tmp_buff = ((uint16_t)data_bus) >> 1;
+
+    set_flag(C, (tmp_buff & 0xFF00) > 0);
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
+    set_flag(N, tmp_buff & 0x0080);
+
+    if (is_ACC()) {
+        A = tmp_buff & 0x00FF;
+    } else {
+        data_bus = tmp_buff & 0x00FF;
+        mem_write();
+    }
+
+    return false;
+}
+
+bool MOS6502::NOP() {   // DONE
+    // TODO(max): handle different nops
+    switch (opcode) {
+    case 0x1C:
+    case 0x3C:
+    case 0x5C:
+    case 0x7C:
+    case 0xDC:
+    case 0xFC:
+        return true;
+        break;
+    }
+
+    return false;
+}
+
+bool MOS6502::ORA() {   // DONE
+    mem_read();
+    A = A | data_bus;
+    set_flag(Z, A == 0x00);
+    set_flag(N, A & 0x80);
     return true;
 }
 
-bool MOS6502::NOP() {
-    return true;
+bool MOS6502::PHA() {   // DONE
+    data_bus = A;
+    address = 0x0100 + S--;
+    mem_write();
+    return false;
 }
 
-bool MOS6502::ORA() {
-    return true;
+bool MOS6502::PHP() {   // DONE
+    set_flag(B, true);
+    set_flag(U, true);
+
+    data_bus = P;
+    address = 0x0100 + S--;
+    mem_write();
+    set_flag(B, false);
+    set_flag(U, false);
+
+    return false;
 }
 
-bool MOS6502::PHA() {
-    return true;
+bool MOS6502::PLA() {   // DONE
+    S++;
+    address = 0x0100 + S;
+    mem_read();
+    A = data_bus;
+    set_flag(Z, A == 0x00);
+    set_flag(N, A & 0x80);
+
+    return false;
 }
 
-bool MOS6502::PHP() {
-    return true;
+bool MOS6502::PLP() {   // DONE
+    S++;
+    address = 0x0100 + S;
+    P = data_bus;
+    set_flag(U, true);
+    return false;
 }
 
-bool MOS6502::PLA() {
-    return true;
+bool MOS6502::ROL() {   // DONE
+    mem_read();
+    tmp_buff = (uint16_t)(data_bus << 1) | (read_flag(C) ? 1 : 0);
+    set_flag(C, tmp_buff & 0xFF00);
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
+    set_flag(N, tmp_buff & 0x0080);
+
+    if (is_ACC()) {
+        A = tmp_buff & 0x00FF;
+    } else {
+        data_bus = tmp_buff & 0x00FF;
+        mem_write();
+    }
+
+    return false;
 }
 
-bool MOS6502::PLP() {
-    return true;
-}
+bool MOS6502::ROR() {   // DONE
+    mem_read();
+    tmp_buff = (uint16_t)((read_flag(C) ? 1 : 0) << 7) | (data_bus >> 1);
+    set_flag(C, data_bus & 0x01);
+    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
+    set_flag(N, tmp_buff & 0x0080);
 
-bool MOS6502::ROL() {
-    return true;
-}
+    if (is_ACC()) {
+        A = tmp_buff & 0x00FF;
+    } else {
+        data_bus = tmp_buff & 0x00FF;
+        mem_write();
+    }
 
-bool MOS6502::ROR() {
-    return true;
+    return false;
 }
 
 bool MOS6502::RTI() {
-    return true;
+    S++;
+    address = 0x0100 + S;
+    mem_read();
+    P = data_bus;
+    P &= ~B;
+    P &= ~U;
+
+    S++;
+    address = 0x0100 + S;
+    mem_read();
+    tmp_buff = (uint16_t)data_bus;
+    S++;
+    address = 0x0100 + S;
+    mem_read();
+    tmp_buff |= (uint16_t)data_bus << 8;
+
+    PC = tmp_buff;
+
+    return false;
 }
 
 bool MOS6502::RTS() {
-    return true;
+    S++;
+    address = 0x0100 + S;
+    mem_read();
+    tmp_buff = (uint16_t)data_bus;
+    S++;
+    address = 0x0100 + S;
+    mem_read();
+    tmp_buff |= (uint16_t)data_bus << 8;
+
+    PC = tmp_buff;
+
+    return false;
 }
 
 bool MOS6502::SBC() {

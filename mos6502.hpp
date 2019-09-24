@@ -69,8 +69,9 @@ class MOS6502 {
     // Private utils
     void set_flag(const status_flag_t flag, const bool val);
     bool read_flag(const status_flag_t flag);
-    void mem_fetch();
+    void mem_read();
     void mem_write();
+    bool is_ACC();
 
   public:
     MOS6502(Bus *b);
