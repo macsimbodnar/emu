@@ -219,28 +219,36 @@ void Console::show() {
 
 bool Console::get_input() {
     char in;
+    int i = 0;
 
     while (true) {
         scanf(" %c", &in);
 
         switch (in) {
-        case 'c':   // Next clock tick
-        case 'C':
-            return true;
-
-        case 'n':   // Next mem page
-        case 'N':
-            if (print_mem_page < 0x00FF) {
-                print_mem_page++;
+        case 'b':   // Previous meme page
+        case 'B':
+            if (print_mem_page > 0) {
+                print_mem_page--;
                 draw_memory();
             }
 
             break;
 
-        case 'b':   // Previous meme page
-        case 'B':
-            if (print_mem_page > 0) {
-                print_mem_page--;
+        case 'c':   // Next clock tick
+        case 'C':
+            return true;
+
+        case 'l':
+        case 'L':
+            push_log("Some log " + std::to_string(i));
+            i++;
+            draw_logs();
+            break;
+
+        case 'n':   // Next mem page
+        case 'N':
+            if (print_mem_page < 0x00FF) {
+                print_mem_page++;
                 draw_memory();
             }
 

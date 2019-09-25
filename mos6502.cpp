@@ -733,9 +733,11 @@ bool MOS6502::LDY() {   // DONE
 
 bool MOS6502::LSR() {   // DONE
     mem_read();
-    tmp_buff = ((uint16_t)data_bus) >> 1;
 
-    set_flag(C, (tmp_buff & 0xFF00) > 0);
+    set_flag(C, data_bus & 0x01);
+
+    tmp_buff = data_bus >> 1;
+
     set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
     set_flag(N, tmp_buff & 0x0080);
 

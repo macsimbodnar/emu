@@ -38,7 +38,6 @@ size_t Bus::gem_mem_size() {
 }
 
 
-uint8_t * Bus::get_mem_ptr() {
+uint8_t *Bus::get_mem_ptr() {
     return &(RAM[0]);
 }
-
