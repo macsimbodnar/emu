@@ -6,6 +6,7 @@
 #pragma once
 #include <stdint.h>
 #include <array>
+#include "common.hpp"
 
 
 class Bus {
@@ -18,13 +19,7 @@ class Bus {
   public:
     Bus();
 
-    enum access_t {
-        READ = 0,
-        WRITE,
-        READ_ONLY
-    };
-
-    void access(const uint16_t address, const access_t read_write, uint8_t &data);
+    void access(const uint16_t address, const access_mode_t read_write, uint8_t &data);
 
     size_t gem_mem_size();
     uint8_t *get_mem_ptr();

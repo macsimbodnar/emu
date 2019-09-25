@@ -10,7 +10,7 @@ Bus::Bus() {
 }
 
 
-void Bus::access(const uint16_t address, const access_t read_write, uint8_t &data) {
+void Bus::access(const uint16_t address, const access_mode_t read_write, uint8_t &data) {
 
     if (address < MIN_ADDRESS || address > MAX_ADDRESS) {
         log_e("Address out of bounds " + uint16_to_hex(address, true));
@@ -19,11 +19,11 @@ void Bus::access(const uint16_t address, const access_t read_write, uint8_t &dat
 
     switch (read_write) {
 
-    case access_t::READ:
+    case access_mode_t::READ:
         data =  RAM[address];
         break;
 
-    case access_t::WRITE:
+    case access_mode_t::WRITE:
         RAM[address] = data;
         break;
 

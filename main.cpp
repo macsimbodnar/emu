@@ -48,6 +48,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    fclose(file);
+
     mem_ptr[0xFFFC] = 0x20;                     // Set the reset Vector
     mem_ptr[0xFFFD] = 0x40;
 

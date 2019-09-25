@@ -32,3 +32,10 @@ struct p_state_t {
     unsigned int cycles_count;
     unsigned int cycles_needed;
 };
+
+
+enum class access_mode_t {
+    READ = 0,
+    WRITE,
+    READ_ONLY
+};
