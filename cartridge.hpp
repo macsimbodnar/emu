@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
-
+#include "mapper.hpp"
 
 class Cartridge {
   private:
@@ -28,4 +28,9 @@ class Cartridge {
   public:
     Cartridge(const std::string &file);
     ~Cartridge();
+
+    bool is_valid();
+
+    bool cpu_mem_access(uint16_t addr, access_mode_t access, uint8_t &data);
+    bool ppu_mem_access(uint16_t addr, access_mode_t access, uint8_t &data);
 };

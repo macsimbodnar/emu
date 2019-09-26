@@ -1,5 +1,6 @@
 #include "cartridge.hpp"
 #include "log.hpp"
+#include "mapper_000.hpp"
 
 
 // iNES Format Header
@@ -31,7 +32,7 @@ Cartridge::Cartridge(const std::string &file) : valid(false), mirror(HORIZONTAL)
     size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
 
-    if (size <= sizeof(ines_header_t))  {
+    if ((size_t)size <= sizeof(ines_header_t))  {
         log_e("Invalid cartridge file " + file);
         return;
     }
@@ -92,7 +93,7 @@ Cartridge::Cartridge(const std::string &file) : valid(false), mirror(HORIZONTAL)
     // Load appropriate mapper
     switch (mapper_id) {
     case 0:
-        mapper = Mapper_000(prg_memory, chr_banks);
+        mapper = new Mapper_000(prg_banks, chr_banks);
         break;
 
     default:
@@ -105,9 +106,78 @@ Cartridge::Cartridge(const std::string &file) : valid(false), mirror(HORIZONTAL)
 }
 
 
-Cartridge::~Cartridge()
-{
-    if (mapper) {
-        delete mapper;
+Cartridge::~Cartridge() {
+    // TODO(max): delete the mapper
+    // if (mapper) {
+    //     delete mapper;
+    // }
+}
+
+
+bool Cartridge::is_valid() {
+    return valid;
+}
+
+
+bool Cartridge::cpu_mem_access(uint16_t addr, access_mode_t access, uint8_t &data) {
+    uint32_t mapped_address;
+    // TODO(max): check if is valid, if not return false and log
+
+    switch (access) {
+    case access_mode_t::READ:
+        if (mapper->cpu_address(addr, access, mapped_address)) {
+            // TODO(max): check if the address is in the range of allocated memory
+            data = prg_memory[mapped_address];
+            return true;
+        }
+
+        break;
+
+    case access_mode_t::WRITE:
+        if (mapper->cpu_address(addr, access, mapped_address)) {
+            // TODO(max): check if the address is in the range of allocated memory
+            prg_memory[mapped_address] = data;
+            return true;
+        }
+
+        break;
+
+    default:
+        log_e("Error, unexpected access mode in cartridge");
+        break;
     }
+
+    return false;
+}
+
+
+bool Cartridge::ppu_mem_access(uint16_t addr, access_mode_t access, uint8_t &data) {
+    uint32_t mapped_address;
+    // TODO(max): check if is valid, if not return false and log
+
+    switch (access) {
+    case access_mode_t::READ:
+        if (mapper->ppu_address(addr, access, mapped_address)) {
+            // TODO(max): check if the address is in the range of allocated memory
+            data = chr_memory[mapped_address];
+            return true;
+        }
+
+        break;
+
+    case access_mode_t::WRITE:
+        if (mapper->ppu_address(addr, access, mapped_address)) {
+            // TODO(max): check if the address is in the range of allocated memory
+            chr_memory[mapped_address] = data;
+            return true;
+        }
+
+        break;
+
+    default:
+        log_e("Error, unexpected access mode in cartridge");
+        break;
+    }
+
+    return false;
 }
