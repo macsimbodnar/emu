@@ -8,7 +8,7 @@ class Console {
     static const unsigned int LOG_LINES = 6;
     static const unsigned int CONTENT_HEIGHT = 22;
 
-    static const unsigned int WIDTH = 90;
+    static const unsigned int WIDTH = 95;
     static const unsigned int HEIGHT = LOG_LINES + CONTENT_HEIGHT + 1;
 
     static const unsigned int HEADER_HEIGHT = 4;

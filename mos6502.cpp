@@ -76,6 +76,8 @@ void MOS6502::clock() {
     }
 
     // cycles--;
+    // tot_cycles++;
+    tot_cycles += cycles;
     cycles = 0;
 }
 
@@ -104,6 +106,7 @@ void MOS6502::reset() {
     accumulator_addressing = false;
 
     cycles = 8;
+    tot_cycles = 0;
 }
 
 
@@ -188,6 +191,7 @@ p_state_t MOS6502::get_status() {
             X,
             Y,
             S,
+            P,
             PC,
             opcode_table[opcode].name,
             opcode,
@@ -200,7 +204,8 @@ p_state_t MOS6502::get_status() {
             opcode_table[opcode].cycles,
             PC_executed,
             arg1,
-            arg2};
+            arg2,
+            tot_cycles};
 }
 
 

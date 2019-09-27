@@ -7,7 +7,8 @@ struct p_state_t {
     uint8_t A;
     uint8_t X;
     uint8_t Y;
-    uint8_t S;
+    uint8_t S;  // Stack pointer
+    uint8_t P;  // Processor stats 
     uint16_t PC;
 
     std::string opcode_name;
@@ -27,6 +28,8 @@ struct p_state_t {
     uint16_t PC_executed;
     uint8_t arg1;
     uint8_t arg2;
+
+    uint32_t tot_cycles;
 };
 
 

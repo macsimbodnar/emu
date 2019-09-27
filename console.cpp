@@ -93,11 +93,11 @@ void Console::draw_status() {
 
     // FLAGS
     col += 5;
-    buff = "NO-BDIZC";
+    buff = "NO-BDIZC   CYCLES: " + std::to_string(current_state.tot_cycles);
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
     line++;
-    buff = uint8_to_bin(current_state.S);
+    buff = uint8_to_bin(current_state.P);
 
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
@@ -120,7 +120,7 @@ void Console::draw_status() {
     sprintf(&(buff[22]), "0x%02X", current_state.Y);
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
-    // S register
+    // S Stack pointer
     line++;
     buff = "S: [" + uint8_to_bin(current_state.S) + "]         XXXX";
     sprintf(&(buff[22]), "0x%02X", current_state.S);
@@ -188,11 +188,12 @@ void Console::draw_status() {
 
 
 void Console::draw_exec_log() {
-    std::string s;
-    s.resize(50);
-    build_log_str(s, current_state.PC_executed);
+    // std::string s;
+    // s.resize(50);
+    // build_log_str(s, current_state.PC_executed);
 
-    memcpy(&(display[CONTENT_HEIGHT - 2][0]), &(s[0]), s.size());
+    // memcpy(&(display[CONTENT_HEIGHT - 2][0]), &(s[0]), s.size());
+    build_log_str(&(display[CONTENT_HEIGHT - 2][0]), current_state);
 }
 
 
