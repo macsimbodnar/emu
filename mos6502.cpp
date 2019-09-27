@@ -43,8 +43,22 @@ void MOS6502::clock() {
     if (cycles == 0) {
 
         address = PC++;
+
         mem_read();
         opcode = data_bus;
+
+        // TEST
+        PC_executed = address;
+
+        if (opcode_table[opcode].instruction_bytes > 1) {
+            bus->access(PC_executed + 1, access_mode_t::READ, arg1);
+        }
+
+        if (opcode_table[opcode].instruction_bytes > 2) {
+            bus->access(PC_executed + 2, access_mode_t::READ, arg2);
+        }
+
+        // TEST END
 
         cycles = opcode_table[opcode].cycles;
 
@@ -170,36 +184,23 @@ bool MOS6502::is_ACC() {
 
 
 p_state_t MOS6502::get_status() {
-    p_state_t state;
-
-    state.A = A;
-    state.X = X;
-    state.Y = Y;
-    state.S = S;
-    state.PC = PC;
-
-    state.N = read_flag(N);
-    state.O = read_flag(O);
-    state.U = read_flag(U);
-    state.B = read_flag(B);
-    state.D = read_flag(D);
-    state.I = read_flag(I);
-    state.Z = read_flag(Z);
-    state.C = read_flag(C);
-
-    state.opcode_name = opcode_table[opcode].name;
-    state.opcode = opcode;
-
-    state.data_bus = data_bus;
-    state.address = address;
-    state.relative_adderess = relative_adderess;
-
-    state.tmp_buff = tmp_buff;
-
-    state.cycles_count = cycles;
-    state.cycles_needed = opcode_table[opcode].cycles;
-
-    return state;
+    return {A,
+            X,
+            Y,
+            S,
+            PC,
+            opcode_table[opcode].name,
+            opcode,
+            opcode_table[opcode].instruction_bytes,
+            data_bus,
+            address,
+            relative_adderess,
+            tmp_buff,
+            cycles,
+            opcode_table[opcode].cycles,
+            PC_executed,
+            arg1,
+            arg2};
 }
 
 

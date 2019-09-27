@@ -19,3 +19,8 @@ std::string uint8_to_bin(const uint8_t i) {
 std::string uint16_to_bin(const uint16_t i) {
     return std::bitset<16>(i).to_string();
 }
+
+
+void build_log_str(std::string &out, const uint16_t PC) {
+    sprintf(&out[0], "%.4X", PC);
+}

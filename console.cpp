@@ -29,6 +29,7 @@ bool Console::frame(p_state_t &state, uint8_t *p_mem, const size_t size) {
     mem_size = size;
     draw_memory();
     draw_status();
+    draw_exec_log();
     draw_logs();
 
     show();
@@ -92,18 +93,11 @@ void Console::draw_status() {
 
     // FLAGS
     col += 5;
-    buff = "N O - B D I Z C";
+    buff = "NO-BDIZC";
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
     line++;
-    buff = std::string(current_state.N ? "1 " : "0 ") +
-           (current_state.O ? "1 " : "0 ") +
-           (current_state.U ? "1 " : "0 ") +
-           (current_state.B ? "1 " : "0 ") +
-           (current_state.D ? "1 " : "0 ") +
-           (current_state.I ? "1 " : "0 ") +
-           (current_state.Z ? "1 " : "0 ") +
-           (current_state.C ? "1 " : "0");
+    buff = uint8_to_bin(current_state.S);
 
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
 
@@ -190,6 +184,15 @@ void Console::draw_status() {
 
     buff += std::to_string(current_state.cycles_needed);
     memcpy(&(display[line][col]), &(buff[0]), buff.length());
+}
+
+
+void Console::draw_exec_log() {
+    std::string s;
+    s.resize(50);
+    build_log_str(s, current_state.PC_executed);
+
+    memcpy(&(display[CONTENT_HEIGHT - 2][0]), &(s[0]), s.size());
 }
 
 

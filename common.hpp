@@ -10,17 +10,9 @@ struct p_state_t {
     uint8_t S;
     uint16_t PC;
 
-    bool N;
-    bool O;
-    bool U;
-    bool B;
-    bool D;
-    bool I;
-    bool Z;
-    bool C;
-
     std::string opcode_name;
     uint8_t opcode;
+    unsigned int opcode_size;
 
     uint8_t data_bus;
 
@@ -31,6 +23,10 @@ struct p_state_t {
 
     unsigned int cycles_count;
     unsigned int cycles_needed;
+
+    uint16_t PC_executed;
+    uint8_t arg1;
+    uint8_t arg2;
 };
 
 

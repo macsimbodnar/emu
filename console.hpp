@@ -6,8 +6,8 @@
 class Console {
   private:
     static const unsigned int LOG_LINES = 6;
-    static const unsigned int CONTENT_HEIGHT = 21;
-    
+    static const unsigned int CONTENT_HEIGHT = 22;
+
     static const unsigned int WIDTH = 90;
     static const unsigned int HEIGHT = LOG_LINES + CONTENT_HEIGHT + 1;
 
@@ -30,6 +30,7 @@ class Console {
 
     void draw_memory();
     void draw_status();
+    void draw_exec_log();
     void draw_logs();
     void show();
     bool get_input();

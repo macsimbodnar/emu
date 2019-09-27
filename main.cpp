@@ -12,8 +12,6 @@ int main(int argc, char *argv[]) {
 
     // FILE *file;
     // long size;
-    p_state_t state;
-
     if (argc < 2) {
         log_e("Provide the binary code!");
         return 1;
@@ -66,20 +64,10 @@ int main(int argc, char *argv[]) {
 
     cpu.set_PC(0xC000);
 
-    state = cpu.get_status();
-
-
+    p_state_t state = cpu.get_status();
     while (console.frame(state, mem_ptr, mem_size)) {
         cpu.clock();
         state = cpu.get_status();
-
-        uint8_t res1;
-        uint8_t res2;
-
-        b.access(0x0002, access_mode_t::READ, res1);
-        b.access(0x0003, access_mode_t::READ, res2);
-
-        printf("Result: 02 -> %d      03 -> %d\n\n\n", res1, res2);
     }
 
     return 0;
