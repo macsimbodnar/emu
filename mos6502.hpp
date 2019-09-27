@@ -47,6 +47,7 @@ class MOS6502 {
         bool (MOS6502::*operation)(void) = nullptr;
         bool (MOS6502::*addrmode)(void) = nullptr;
         unsigned int cycles = 0;
+        unsigned int instruction_bytes = 0;
     };
 
   private:
@@ -80,6 +81,8 @@ class MOS6502 {
     void reset();       // Reset signal
     void irq();         // Interrupt signal
     void nmi();         // Non-maskable interrupt signal
+
+    void set_PC(uint16_t address);
 
     p_state_t get_status();
 

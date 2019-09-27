@@ -30,12 +30,12 @@ void MOS6502::mem_read() {
     if (is_ACC()) {
         data_bus = A;
     } else {
-        bus->access(address, Bus::READ, data_bus);
+        bus->access(address, access_mode_t::READ, data_bus);
     }
 }
 
 void MOS6502::mem_write() {
-    bus->access(address, Bus::WRITE, data_bus);
+    bus->access(address, access_mode_t::WRITE, data_bus);
 }
 
 
@@ -200,6 +200,11 @@ p_state_t MOS6502::get_status() {
     state.cycles_needed = opcode_table[opcode].cycles;
 
     return state;
+}
+
+
+void MOS6502::set_PC(uint16_t address) {
+    PC = address;
 }
 
 

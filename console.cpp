@@ -34,6 +34,7 @@ bool Console::frame(p_state_t &state, uint8_t *p_mem, const size_t size) {
     show();
 
     return get_input();
+    // return true;
 }
 
 

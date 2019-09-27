@@ -6,21 +6,21 @@
 #pragma once
 #include <stdint.h>
 #include <array>
+#include "cartridge.hpp"
 #include "common.hpp"
 
 
 class Bus {
   private:
-    static const uint16_t MIN_ADDRESS = 0x0000;
-    static const uint16_t MAX_ADDRESS = 0xFFFF;
+    // 2KB of RAM
+    std::array<uint8_t, 2048> RAM;
+    Cartridge *cartridge;
 
-    std::array<uint8_t, 64 * 1024> RAM;
-  
   public:
-    Bus();
+    Bus(Cartridge *cartridge);
 
     void access(const uint16_t address, const access_mode_t read_write, uint8_t &data);
 
-    size_t gem_mem_size();
+    size_t get_mem_size();
     uint8_t *get_mem_ptr();
 };

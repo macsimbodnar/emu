@@ -3,7 +3,7 @@ FLAGS = -g -O0 -Wall -Werror
 
 ALLOBJ = log.o util.o mos6502.o opcode.o bus.o console.o cartridge.o mapper_000.o
 
-all: main build_test
+all: main
 
 mos6502.o: mos6502.cpp mos6502.hpp opcode.o
 	$(CXX) $(FLAGS) -c -o mos6502.o mos6502.cpp

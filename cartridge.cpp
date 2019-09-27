@@ -38,7 +38,8 @@ Cartridge::Cartridge(const std::string &file) : valid(false), mirror(HORIZONTAL)
     }
 
     // Read the header
-    if (fread(&header, sizeof(ines_header_t), 1, fp) != sizeof(ines_header_t)) {
+    size_t b_readen = fread((char *)&header, sizeof(char), sizeof(ines_header_t), fp);
+    if (b_readen != sizeof(ines_header_t)) {
         log_e("Failed read the cartridge from file: " + file);
         return;
     }
