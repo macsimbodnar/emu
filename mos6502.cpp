@@ -299,15 +299,31 @@ bool MOS6502::REL() {   // DONE
     return false;
 }
 
-bool MOS6502::IIX() {   // DONEADC
+bool MOS6502::IIX() {   // DONE
+
+    // TODO(max): fix, use only tmp
+    // address = PC++;
+    // mem_read();
+    // address = ((uint16_t)data_bus + (uint16_t)X) & 0x00FF;
+    // mem_read();
+    // tmp_buff = data_bus & 0x00FF;
+    // address++;
+    // mem_read();
+    // address = ((((uint16_t)data_bus) << 8) & 0xFF00) | tmp_buff;
+
     address = PC++;
     mem_read();
-    address = ((uint16_t)data_bus + (uint16_t)X) & 0x00FF;
+    tmp_buff = data_bus;
+
+    address = (uint16_t)(tmp_buff + (uint16_t)X) & 0x00FF;
     mem_read();
-    tmp_buff = data_bus & 0x00FF;
-    address++;
+    uint16_t lo = data_bus;
+
+    address = (uint16_t)(tmp_buff + (uint16_t)X + 1) & 0x00FF;
     mem_read();
-    address = ((((uint16_t)data_bus) << 8) & 0xFF00) | tmp_buff;
+    uint16_t hi = data_bus;
+
+    address = (hi << 8) | lo;
 
     return false;
 }
