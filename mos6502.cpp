@@ -27,7 +27,7 @@ bool MOS6502::read_flag(const status_flag_t flag) {
 
 
 void MOS6502::mem_read() {
-    if (is_ACC()) {
+    if (accumulator_addressing) {
         data_bus = A;
     } else {
         bus->access(address, access_mode_t::READ, data_bus);
@@ -35,7 +35,11 @@ void MOS6502::mem_read() {
 }
 
 void MOS6502::mem_write() {
-    bus->access(address, access_mode_t::WRITE, data_bus);
+    if (accumulator_addressing) {
+        A = data_bus;
+    } else {
+        bus->access(address, access_mode_t::WRITE, data_bus);
+    }
 }
 
 
@@ -43,6 +47,9 @@ void MOS6502::clock() {
     cycles = 0;
 
     if (cycles == 0) {
+
+        // Reset the ACCUMULATOR addressing mode if set
+        accumulator_addressing = false;
 
         address = PC++;
 
@@ -171,16 +178,6 @@ void MOS6502::nmi() {   // Read from 0xFFFA
     PC = (((uint16_t)data_bus) << 8) | tmp_buff;
 
     cycles = 8;
-}
-
-
-bool MOS6502::is_ACC() {
-    if (accumulator_addressing) {
-        accumulator_addressing = false;
-        return true;
-    }
-
-    return false;
 }
 
 
@@ -394,12 +391,8 @@ bool MOS6502::ASL() {   // DONE
     set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
     set_flag(N, tmp_buff & 0x0080);
 
-    if (is_ACC()) {
-        A = tmp_buff & 0x00FF;
-    } else {
-        data_bus = tmp_buff & 0x00FF;
-        mem_write();
-    }
+    data_bus = tmp_buff & 0x00FF;
+    mem_write();
 
     return false;
 }
@@ -748,14 +741,11 @@ bool MOS6502::LSR() {   // DONE
     tmp_buff = data_bus >> 1;
 
     set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(N, tmp_buff & 0x0080);
+    // set_flag(N, tmp_buff & 0x0080);
+    set_flag(N, false);
 
-    if (is_ACC()) {
-        A = tmp_buff & 0x00FF;
-    } else {
-        data_bus = tmp_buff & 0x00FF;
-        mem_write();
-    }
+    data_bus = tmp_buff & 0x00FF;
+    mem_write();
 
     return false;
 }
@@ -832,12 +822,8 @@ bool MOS6502::ROL() {   // DONE
     set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
     set_flag(N, tmp_buff & 0x0080);
 
-    if (is_ACC()) {
-        A = tmp_buff & 0x00FF;
-    } else {
-        data_bus = tmp_buff & 0x00FF;
-        mem_write();
-    }
+    data_bus = tmp_buff & 0x00FF;
+    mem_write();
 
     return false;
 }
@@ -849,12 +835,8 @@ bool MOS6502::ROR() {   // DONE
     set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
     set_flag(N, tmp_buff & 0x0080);
 
-    if (is_ACC()) {
-        A = tmp_buff & 0x00FF;
-    } else {
-        data_bus = tmp_buff & 0x00FF;
-        mem_write();
-    }
+    data_bus = tmp_buff & 0x00FF;
+    mem_write();
 
     return false;
 }

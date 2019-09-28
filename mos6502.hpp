@@ -85,7 +85,6 @@ class MOS6502 {
     bool read_flag(const status_flag_t flag);
     void mem_read();
     void mem_write();
-    bool is_ACC();
 
   public:
     MOS6502(Bus *b);
