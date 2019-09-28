@@ -103,7 +103,7 @@ class MOS6502 {
      *                  ADDRESSING MODES                    *
      ********************************************************/
     bool ACC();         //                (???)Accumulator addressing:          1-byte instruction on accumulator
-    bool IMM();         //                (IMM)Immediate address:               the 2d byte of instruction is the operand
+    bool IMM();         // #$40           (IMM)Immediate address:               the 2d byte of instruction is the operand
     bool ABS();         // $nnnn = nn     (ABS)Abbsolute addressing:            the 2d byte of instruction is the 8 low order bits of the address, 3d is the 8 high order bits (64k total addresses)
     bool ZPI();         // $nn = nn       (ZP0)Zero page addressing:            fetch only the 2d byte of the instruction. Assuming the high byte is 0
     bool ZPX();         // $10,X          (ZPX)Indexed zero page addressing X:  the X register is added to the 2d byte. The high byte is 0. No carry is added to high byte, so no page overlapping
