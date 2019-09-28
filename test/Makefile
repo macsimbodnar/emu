@@ -15,4 +15,5 @@ test: build_test
 	./test
 
 clean:
+	$(MAKE) clean -C $(MAIN_DIR)
 	rm -rf test

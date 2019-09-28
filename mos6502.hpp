@@ -24,6 +24,15 @@ class MOS6502 {
     uint16_t PC;        // Program counter
     uint8_t S;          // Stack pointer            NOTE(max): [1][---- ----]
 
+    // NVss DIZC
+    // |||| ||||
+    // |||| |||+- Carry
+    // |||| ||+-- Zero
+    // |||| |+--- Interrupt Disable
+    // |||| +---- Decimal
+    // ||++------ No CPU effect, see: the B flag
+    // |+-------- Overflow
+    // +--------- Negative
     uint8_t P;          // Processor status reg     NOTE(max): [N][V][-][B][D][I][Z][C]
 
   private:

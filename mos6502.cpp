@@ -14,15 +14,15 @@ MOS6502::MOS6502(Bus *b) :
 
 void MOS6502::set_flag(const status_flag_t flag, const bool val) {
     if (val) {
-        S |= flag;
+        P |= flag;
     } else {
-        S &= ~flag;
+        P &= ~flag;
     }
 }
 
 
 bool MOS6502::read_flag(const status_flag_t flag) {
-    return (S & flag);
+    return (P & flag);
 }
 
 
@@ -88,7 +88,7 @@ void MOS6502::reset() {
     Y = 0x00;
 
     S = 0xFD;
-    P = 0x00 | U;
+    P = 0x24;
 
     // Read from fix mem address to jump to programmable location
     address = 0xFFFC;
@@ -890,6 +890,7 @@ bool MOS6502::RTS() {   // DONE
     tmp_buff |= (uint16_t)data_bus << 8;
 
     PC = tmp_buff;
+    PC++;
 
     return false;
 }
