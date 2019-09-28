@@ -818,7 +818,9 @@ bool MOS6502::PLA() {   // DONE
 bool MOS6502::PLP() {   // DONE
     S++;
     address = 0x0100 + S;
+    mem_read();
     P = data_bus;
+    set_flag(B, false);
     set_flag(U, true);
     return false;
 }

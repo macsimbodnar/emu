@@ -32,5 +32,11 @@ console.o: console.cpp console.hpp
 main: $(ALLOBJ)
 	$(CXX) $(FLAGS) -o $(PROGNAME) main.cpp $(ALLOBJ)
 
+build_test: test.cpp $(ALLOBJ)
+	$(CXX) $(FLAGS) -o test test.cpp $(ALLOBJ)
+
+test: build_test
+	./test
+
 clean:
-	rm -rf *.o $(PROGNAME)
+	rm -rf *.o $(PROGNAME) test

@@ -3,10 +3,10 @@
 
 #include <fstream>
 
-#include <bus.hpp>
-#include <mos6502.hpp>
-#include <cartridge.hpp>
-#include <util.hpp>
+#include "bus.hpp"
+#include "mos6502.hpp"
+#include "cartridge.hpp"
+#include "util.hpp"
 
 
 #define TEST_CARTRIDGE          "nestest.nes"
