@@ -205,5 +205,6 @@ class MOS6502 {
      ********************************************************/
     bool LAX();         // Loads a value from an absolute address in memory and stores it in A and X at the same time
     bool SAX();         // Stores the bitwise AND of A and X. As with STA and STX, no flags are affected.
+    bool DCP();         // Equivalent to DEC value then CMP value, except supporting more addressing modes. LDA #$FF followed by DCP can be used to check if the decrement underflows, which is useful for multi-byte decrements.
     bool XXX();         // Illegal instruction
 };
