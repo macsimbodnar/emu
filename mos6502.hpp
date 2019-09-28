@@ -57,7 +57,6 @@ class MOS6502 {
     uint16_t PC_executed;
     uint8_t arg1;
     uint8_t arg2;
-    uint32_t tot_cycles;
 
     unsigned int cycles;
     uint8_t opcode;             // Current opcode

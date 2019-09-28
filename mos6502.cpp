@@ -40,6 +40,8 @@ void MOS6502::mem_write() {
 
 
 void MOS6502::clock() {
+    cycles = 0;
+
     if (cycles == 0) {
 
         address = PC++;
@@ -75,10 +77,7 @@ void MOS6502::clock() {
         set_flag(U, true);
     }
 
-    // cycles--;
-    // tot_cycles++;
-    tot_cycles += cycles;
-    cycles = 0;
+    cycles--;
 }
 
 
@@ -105,8 +104,7 @@ void MOS6502::reset() {
     data_bus = 0x00;
     accumulator_addressing = false;
 
-    cycles = 8;
-    tot_cycles = 0;
+    cycles = 6;
 }
 
 
@@ -205,7 +203,7 @@ p_state_t MOS6502::get_status() {
             PC_executed,
             arg1,
             arg2,
-            tot_cycles};
+            0};
 }
 
 

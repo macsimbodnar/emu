@@ -82,7 +82,6 @@ void Console::draw_memory() {
         line++;
     }
 
-
     return;
 }
 

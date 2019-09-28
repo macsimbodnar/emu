@@ -29,14 +29,8 @@ util.o: util.cpp util.hpp
 console.o: console.cpp console.hpp
 	$(CXX) $(FLAGS) -c -o console.o console.cpp
 
-test: build_test
-	./test
-
-build_test: $(ALLOBJ)
-	$(CXX) $(FLAGS) -o test test.cpp $(ALLOBJ)
-
 main: $(ALLOBJ)
 	$(CXX) $(FLAGS) -o $(PROGNAME) main.cpp $(ALLOBJ)
 
 clean:
-	rm -rf *.o $(PROGNAME) test
+	rm -rf *.o $(PROGNAME)

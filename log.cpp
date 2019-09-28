@@ -2,6 +2,7 @@
 
 #include "log.hpp"
 
+// TODO(max): remove console dep
 static Console *console = nullptr;
 
 

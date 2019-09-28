@@ -65,6 +65,7 @@ int main(int argc, char *argv[]) {
     cpu.set_PC(0xC000);
 
     p_state_t state = cpu.get_status();
+
     while (console.frame(state, mem_ptr, mem_size)) {
         cpu.clock();
         state = cpu.get_status();
