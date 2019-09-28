@@ -208,5 +208,6 @@ class MOS6502 {
     bool DCP();         // Equivalent to DEC value then CMP value, except supporting more addressing modes. LDA #$FF followed by DCP can be used to check if the decrement underflows, which is useful for multi-byte decrements.
     bool ISB(); // ISC  // Equivalent to INC value then SBC value, except supporting more addressing modes.
     bool SLO();         // Equivalent to ASL value then ORA value, except supporting more addressing modes. LDA #0 followed by SLO is an efficient way to shift a variable while also loading it in A.
+    bool RLA();         // Equivalent to ROL value then AND value, except supporting more addressing modes. LDA #$FF followed by RLA is an efficient way to rotate a variable while also loading it in A.
     bool XXX();         // Illegal instruction
 };

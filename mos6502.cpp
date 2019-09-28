@@ -1092,6 +1092,14 @@ bool MOS6502::SLO() {
 }
 
 
+bool MOS6502::RLA() {
+    ROL();
+    AND();
+
+    return false;
+}
+
+
 bool MOS6502::XXX() {
     log_e("Executed illegal opcode");
     return false;
