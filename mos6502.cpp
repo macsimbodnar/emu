@@ -1060,6 +1060,14 @@ bool MOS6502::LAX() {
 }
 
 
+bool MOS6502::SAX() {
+    data_bus = A & X;
+    mem_write();
+
+    return false;
+}
+
+
 bool MOS6502::XXX() {
     log_e("Executed illegal opcode");
     return false;
