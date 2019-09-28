@@ -207,5 +207,6 @@ class MOS6502 {
     bool SAX();         // Stores the bitwise AND of A and X. As with STA and STX, no flags are affected.
     bool DCP();         // Equivalent to DEC value then CMP value, except supporting more addressing modes. LDA #$FF followed by DCP can be used to check if the decrement underflows, which is useful for multi-byte decrements.
     bool ISB(); // ISC  // Equivalent to INC value then SBC value, except supporting more addressing modes.
+    bool SLO();         // Equivalent to ASL value then ORA value, except supporting more addressing modes. LDA #0 followed by SLO is an efficient way to shift a variable while also loading it in A.
     bool XXX();         // Illegal instruction
 };

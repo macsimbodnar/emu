@@ -1084,6 +1084,14 @@ bool MOS6502::ISB() {
 }
 
 
+bool MOS6502::SLO() {
+    ASL();
+    ORA();
+
+    return false;
+}
+
+
 bool MOS6502::XXX() {
     log_e("Executed illegal opcode");
     return false;
