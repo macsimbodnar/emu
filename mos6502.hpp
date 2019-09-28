@@ -124,7 +124,7 @@ class MOS6502 {
     //                                                                     ex:  [LDA ($86),Y] (where in $0086: 28 40). First fetch the address located at $0086, add that address to the Y register to get
     //                                                                          the final address. So the address will be $4028 (little endian) and Y is $10 then the final address is
     //                                                                          $4038 ad A will be loaded with the content of the address $4038
-    bool IND();         //                (IND)Abolute indirect:                The 2d byte contain the low byte of address, the 3d byte contain the high byte of the address.
+    bool IND();         //                (IND)Absolute indirect:               The 2d byte contain the low byte of address, the 3d byte contain the high byte of the address.
     //                                                                          The loaded address contain the low byte fo the final addrss and the followed the high byte of the final address
 
     /********************************************************
