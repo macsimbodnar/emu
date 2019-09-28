@@ -26,19 +26,19 @@ void build_log_str(char *out, const p_state_t &s) {
     switch (s.opcode_size) {
     case 1:
         sprintf(out,
-                "%.4X  %.2X        %s                             A:%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X PPU:XXX,XXX CYC:%d",
+                "%.4X  %.2X       %4s                             A:%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X PPU:XXX,XXX CYC:%d",
                 s.PC_executed, s.opcode, s.opcode_name.c_str(), s.A, s.X, s.Y, s.P, s.S, s.tot_cycles);
         break;
 
     case 2:
         sprintf(out,
-                "%.4X  %.2X %.2X     %s                             A:%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X PPU:XXX,XXX CYC:%d",
+                "%.4X  %.2X %.2X    %4s                             A:%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X PPU:XXX,XXX CYC:%d",
                 s.PC_executed, s.opcode, s.arg1, s.opcode_name.c_str(), s.A, s.X, s.Y, s.P, s.S, s.tot_cycles);
         break;
 
     case 3:
         sprintf(out,
-                "%.4X  %.2X %.2X %.2X  %s                             A:%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X PPU:XXX,XXX CYC:%d",
+                "%.4X  %.2X %.2X %.2X %4s                             A:%.2X X:%.2X Y:%.2X P:%.2X SP:%.2X PPU:XXX,XXX CYC:%d",
                 s.PC_executed, s.opcode, s.arg1, s.arg2, s.opcode_name.c_str(), s.A, s.X, s.Y, s.P, s.S,
                 s.tot_cycles);
         break;

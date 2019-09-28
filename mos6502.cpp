@@ -1044,6 +1044,22 @@ bool MOS6502::TYA() {
     return false;
 }
 
+/********************************************************
+ *                  ILLEGAL INST SET                    *
+ ********************************************************/
+
+bool MOS6502::LAX() {
+    mem_read();
+    A = data_bus;
+    X = data_bus;
+
+    set_flag(Z, X == 0x00);
+    set_flag(N, X & 0x80);
+
+    return true;
+}
+
+
 bool MOS6502::XXX() {
     log_e("Executed illegal opcode");
     return false;
