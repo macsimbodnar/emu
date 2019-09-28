@@ -209,5 +209,8 @@ class MOS6502 {
     bool ISB(); // ISC  // Equivalent to INC value then SBC value, except supporting more addressing modes.
     bool SLO();         // Equivalent to ASL value then ORA value, except supporting more addressing modes. LDA #0 followed by SLO is an efficient way to shift a variable while also loading it in A.
     bool RLA();         // Equivalent to ROL value then AND value, except supporting more addressing modes. LDA #$FF followed by RLA is an efficient way to rotate a variable while also loading it in A.
+    bool SRE();         // Equivalent to LSR value then EOR value, except supporting more addressing modes. LDA #0 followed by SRE is an efficient way to shift a variable while also loading it in A.
+    bool RRA();         // Equivalent to ROR value then ADC value, except supporting more addressing modes. Essentially this computes A + value / 2, where value is 9-bit and the division is rounded up.
+    
     bool XXX();         // Illegal instruction
 };

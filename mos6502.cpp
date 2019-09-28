@@ -1100,6 +1100,22 @@ bool MOS6502::RLA() {
 }
 
 
+bool MOS6502::SRE() {
+    LSR();
+    EOR();
+
+    return false;
+}
+
+
+bool MOS6502::RRA() {
+    ROR();
+    ADC();
+
+    return false;
+}
+
+
 bool MOS6502::XXX() {
     log_e("Executed illegal opcode");
     return false;
