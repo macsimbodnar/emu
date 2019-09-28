@@ -329,16 +329,36 @@ bool MOS6502::IIX() {   // DONE
 }
 
 bool MOS6502::IIY() {   // DONE
+    // TODO(max): fix this with tmp only
+    // address = PC++;
+    // mem_read();
+    // address = data_bus & 0x00FF;
+    // mem_read();
+    // tmp_buff = data_bus & 0x00FF;
+    // address++;
+    // mem_read();
+    // address = (((((uint16_t)data_bus) << 8) & 0xFF00) | tmp_buff) + Y;
+
+    // if ((address & 0xFF00) != (((uint16_t)data_bus) << 8)) {
+    //     return true;
+    // }
+
     address = PC++;
     mem_read();
-    address = data_bus & 0x00FF;
-    mem_read();
-    tmp_buff = data_bus & 0x00FF;
-    address++;
-    mem_read();
-    address = (((((uint16_t)data_bus) << 8) & 0xFF00) | tmp_buff) + Y;
+    tmp_buff = data_bus;
 
-    if ((address & 0xFF00) != (((uint16_t)data_bus) << 8)) {
+    address = tmp_buff & 0x00FF;
+    mem_read();
+    uint16_t lo = data_bus;
+
+    address = (tmp_buff + 1) & 0x00FF;
+    mem_read();
+    uint16_t hi = data_bus;
+
+    address = (hi << 8) | lo;
+    address += Y;
+
+    if ((address & 0xFF00) != (hi << 8)) {
         return true;
     }
 
@@ -346,25 +366,58 @@ bool MOS6502::IIY() {   // DONE
 }
 
 bool MOS6502::IND() {   // DONE
+    // TODO(max): fix this
+    // address = PC++;
+    // mem_read();
+    // tmp_buff = data_bus & 0x00FF;
+    // address = PC++;
+    // mem_read();
+    // tmp_buff = (((uint16_t)data_bus) << 8) | tmp_buff;
+
+    // address = tmp_buff;
+    // mem_read();
+    // tmp_buff = data_bus & 0x00FF;
+
+    // if (tmp_buff == 0x00FF) {    // Page boundary hardware bug
+    //     address &= 0xFF00;
+    // } else { // Behave normally
+    //     address++;
+    // }
+
+    // mem_read();
+    // address = (((uint16_t)data_bus) << 8) | tmp_buff;
+
     address = PC++;
     mem_read();
-    tmp_buff = data_bus & 0x00FF;
+    uint16_t lo = data_bus;
+
     address = PC++;
     mem_read();
-    tmp_buff = (((uint16_t)data_bus) << 8) | tmp_buff;
+    uint16_t hi = data_bus;
 
-    address = tmp_buff;
-    mem_read();
-    tmp_buff = data_bus & 0x00FF;
+    tmp_buff = (hi << 8) | lo;
 
-    if (tmp_buff == 0x00FF) {    // Page boundary hardware bug
-        address &= 0xFF00;
-    } else { // Behave normally
-        address++;
+    if (lo == 0x00FF) { // Page boundary hardware bug
+        address = tmp_buff;
+        mem_read();
+        lo = data_bus;
+
+        address = tmp_buff & 0xFF00;
+        mem_read();
+        hi = data_bus;
+
+        address = (hi << 8) | lo;
+    } else {
+        address = tmp_buff;
+        mem_read();
+        lo = data_bus;
+
+        address = tmp_buff + 1;
+        mem_read();
+        hi = data_bus;
+
+        address = (hi << 8) | lo;
     }
-
-    mem_read();
-    address = (((uint16_t)data_bus) << 8) | tmp_buff;
 
     return false;
 }
