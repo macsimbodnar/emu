@@ -1069,20 +1069,16 @@ bool MOS6502::SAX() {
 
 
 bool MOS6502::DCP() {
-    // DEC
-    mem_read();
-    tmp_buff = data_bus - 1;
-    data_bus = tmp_buff & 0x00FF;
-    mem_write();
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(N, tmp_buff & 0x0080);
+    DEC();
+    CMP();
 
-    // CMP
-    mem_read();
-    tmp_buff = (uint16_t)A - (uint16_t)data_bus;
-    set_flag(C, A >= data_bus);
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(N, tmp_buff & 0x0080);
+    return false;
+}
+
+
+bool MOS6502::ISB() {
+    INC();
+    SBC();
 
     return false;
 }
