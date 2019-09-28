@@ -697,11 +697,11 @@ bool MOS6502::JSR() {   // DONE
     tmp_buff = address;
 
     data_bus = (PC >> 8) & 0x00FF;
-    address = S--;
+    address = 0x0100 + S--;
     mem_write();
 
     data_bus = PC & 0x00FF;
-    address = S--;
+    address = 0x0100 + S--;
     mem_write();
 
     address = tmp_buff;
