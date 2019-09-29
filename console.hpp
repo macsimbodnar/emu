@@ -35,13 +35,13 @@ class Console {
     void show();
     bool get_input();
 
-  public:
-    Console();
-
-    bool frame(p_state_t &state, uint8_t *mem, const size_t mem_size);
+    void push_log(const std::string &str);
 
     void set_header_line_2(const char *str, size_t size);
     void set_header_line_3(const char *str, size_t size);
 
-    void push_log(const std::string &str);
+
+  public:
+    Console();
+    int run(int argc, char **argv);
 };

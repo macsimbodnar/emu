@@ -1,12 +1,51 @@
 #include <stdio.h>
 #include <cstring>
+#include <string>
 #include "console.hpp"
 #include "util.hpp"
+#include "mos6502.hpp"
 
+
+#define RAM_SIZE 64 * 1024
 #define EMPTY ' '
 
 
+static void cpu_log(const std::string &msg) {
+    // TODO(max): simplementet the logger
+}
+
+
+static void mem_callback(void *ram,
+                         const uint16_t address,
+                         const access_mode_t read_write,
+                         uint8_t &data) {
+
+    uint8_t *RAM = (uint8_t *) ram;
+
+    if (RAM == nullptr) {
+        cpu_log("RAM is nullptr in the mem_callback");
+        return;
+    }
+
+    switch (read_write) {
+    case access_mode_t::READ:
+        data = RAM[address];
+        return;
+
+    case access_mode_t::WRITE:
+        RAM[address] = data;
+        return;
+
+    default:
+        cpu_log("Unexpected memory access mod: " + std::to_string((int)read_write));
+        return;
+    }
+}
+
+
 Console::Console() : print_mem_page(0) {
+
+    // Cleanup the screen
     for (unsigned int j = 0; j < HEIGHT; j++) {
         for (unsigned int i = 0; i < WIDTH; i++) {
             display[j][i] = EMPTY;
@@ -23,19 +62,75 @@ Console::Console() : print_mem_page(0) {
 }
 
 
-bool Console::frame(p_state_t &state, uint8_t *p_mem, const size_t size) {
-    current_state = state;
-    mem = p_mem;
-    mem_size = size;
-    draw_memory();
-    draw_status();
-    draw_exec_log();
-    draw_logs();
+int  Console::run(int argc, char **argv) {
+    // Load the program from file to the memory
+    FILE *file;
+    long size;
+    uint8_t RAM[RAM_SIZE];
 
-    show();
+    if (argc < 2) {
+        printf("Provide the binary code!\n");     // Using printf because the dispaly is not drawn yet
+        return 1;
+    }
 
-    return get_input();
-    // return true;
+    file = fopen(argv[1], "rb");
+
+    if (file == nullptr) {
+        printf("Can not open the file %s\n", argv[1]);
+        return 1;
+    }
+
+    // get the file size
+    fseek(file, 0, SEEK_END);
+    size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    std::string line_2 = "Total memory:    " + std::to_string(mem_size) + " bytes";
+    std::string line_3 = "Binary size:     " + std::to_string(size) + " bytes";
+
+    set_header_line_2(line_2.c_str(), line_2.length());
+    set_header_line_3(line_3.c_str(), line_3.length());
+
+    // Load the code in RAM
+    if (fread(RAM, sizeof(uint8_t), size, file) != (size_t)size) {
+        printf("Failed read instructions from file.\n");
+        return 1;
+    }
+
+    fclose(file);
+
+    RAM[0xFFFC] = 0x20; // Set the reset Vector ll
+    RAM[0xFFFD] = 0x40; // Set the reset Vector hh
+
+    // Initialize the CPU
+    MOS6502 cpu(mem_callback, (void *) RAM);
+    cpu.set_log_callback(cpu_log);
+    cpu.reset();
+
+    // Set the class variables
+    mem = RAM;
+    mem_size = RAM_SIZE;
+    current_state = cpu.get_status();
+
+    // Enter into the main loop
+    while (true) {
+        draw_memory();
+        draw_status();
+        draw_exec_log();
+        draw_logs();
+
+        show();
+
+        if (!get_input()) {
+            break;
+        }
+
+        cpu.clock();
+        current_state = cpu.get_status();
+    }
+
+
+    return 1;
 }
 
 
@@ -212,6 +307,16 @@ void Console::draw_logs() {
 }
 
 
+void Console::set_header_line_2(const char *str, size_t size) {
+    memcpy(&(display[1][0]), str, size);
+}
+
+
+void Console::set_header_line_3(const char *str, size_t size) {
+    memcpy(&(display[2][0]), str, size);
+}
+
+
 void Console::show() {
     printf("\x1b[H\x1b[J"); // Erase the screen
 
@@ -273,16 +378,6 @@ bool Console::get_input() {
 }
 
 
-void Console::set_header_line_2(const char *str, size_t size) {
-    memcpy(&(display[1][0]), str, size);
-}
-
-
-void Console::set_header_line_3(const char *str, size_t size) {
-    memcpy(&(display[2][0]), str, size);
-}
-
-
 void Console::push_log(const std::string &str) {
     logs[log_head] = str;
     log_head++;
@@ -290,4 +385,10 @@ void Console::push_log(const std::string &str) {
     if (log_head == LOG_LINES) {
         log_head = 0;
     }
+}
+
+
+int main(int argc, char **argv) {
+    Console console;
+    return console.run(argc, argv);
 }
