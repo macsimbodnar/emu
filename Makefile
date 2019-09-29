@@ -5,7 +5,7 @@ ALLOBJ = log.o util.o mos6502.o opcode.o bus.o console.o cartridge.o mapper_000.
 
 all: main
 
-mos6502.o: mos6502.cpp mos6502.hpp opcode.o
+mos6502.o: mos6502.cpp mos6502.hpp common.hpp opcode.o
 	$(CXX) $(FLAGS) -c -o mos6502.o mos6502.cpp
 
 opcode.o: opcode.cpp mos6502.hpp

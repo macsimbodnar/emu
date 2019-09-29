@@ -55,7 +55,8 @@ int main(int argc, char *argv[]) {
     }
 
     Bus b(&test);
-    MOS6502 cpu(&b);
+    MOS6502 cpu(Bus::access, &b);
+    cpu.set_log_callback(log_e);
 
     uint8_t *mem_ptr = b.get_mem_ptr();
     size_t mem_size = b.get_mem_size();

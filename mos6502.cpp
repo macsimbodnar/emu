@@ -1,15 +1,8 @@
-#include "log.hpp"
 #include "mos6502.hpp"
 
 
-MOS6502::MOS6502(Bus *b) :
-    A(0x00), X(0x00), Y(0x00), PC(0x0000), S(0xFD), P(0x00), bus(b),
-    cycles(0), accumulator_addressing(false) {
-
-    if (bus == nullptr) {
-        log_e("Bus is nullptr");
-    }
-}
+MOS6502::MOS6502(mem_access_callback mem_acc_clb, void *usr_data) :
+    mem_access(mem_acc_clb), user_data(usr_data) {}
 
 
 void MOS6502::set_flag(const status_flag_t flag, const bool val) {
@@ -30,7 +23,8 @@ void MOS6502::mem_read() {
     if (accumulator_addressing) {
         data_bus = A;
     } else {
-        bus->access(address, access_mode_t::READ, data_bus);
+        // NOTE(max): intentionally not checking if function is nullptr
+        mem_access(user_data, address, access_mode_t::READ, data_bus);
     }
 }
 
@@ -38,7 +32,8 @@ void MOS6502::mem_write() {
     if (accumulator_addressing) {
         A = data_bus;
     } else {
-        bus->access(address, access_mode_t::WRITE, data_bus);
+        // NOTE(max): intentionally not checking if function is nullptr
+        mem_access(user_data, address, access_mode_t::WRITE, data_bus);
     }
 }
 
@@ -60,11 +55,11 @@ void MOS6502::clock() {
         PC_executed = address;
 
         if (opcode_table[opcode].instruction_bytes > 1) {
-            bus->access(PC_executed + 1, access_mode_t::READ, arg1);
+            mem_access(user_data, PC_executed + 1, access_mode_t::READ, arg1);
         }
 
         if (opcode_table[opcode].instruction_bytes > 2) {
-            bus->access(PC_executed + 2, access_mode_t::READ, arg2);
+            mem_access(user_data, PC_executed + 2, access_mode_t::READ, arg2);
         }
 
         // TEST END
@@ -94,11 +89,11 @@ void MOS6502::reset() {
     X = 0x00;
     Y = 0x00;
 
-    S = 0xFD;
-    P = 0x24;
+    S = STACK_POINTER_DEFAULT;
+    P = PROCESSOR_STATUS_DEFAULT;
 
     // Read from fix mem address to jump to programmable location
-    address = 0xFFFC;
+    address = INITIAL_ADDRESS;
     mem_read();
     tmp_buff = data_bus & 0x00FF;
     address++;
@@ -119,11 +114,11 @@ void MOS6502::irq() {   // Read from 0xFFFE
     if (read_flag(I) == false) {
         // Push PC on the stack
         // Write first the high because the stack decrease
-        address = 0x0100 + S--;
+        address = STACK_OFFSET + S--;
         data_bus = (PC >> 8) & 0x00FF;
         mem_write();    // write high byte
 
-        address = 0x0100 + S--;
+        address = STACK_OFFSET + S--;
         data_bus = PC & 0x00FF;
         mem_write();    // write low byte
 
@@ -133,7 +128,7 @@ void MOS6502::irq() {   // Read from 0xFFFE
         set_flag(I, 1);
 
         data_bus = P;
-        address = 0x0100 + S--;
+        address = STACK_OFFSET + S--;
         mem_write();
 
         // Read new PC from the fixed location
@@ -152,11 +147,11 @@ void MOS6502::irq() {   // Read from 0xFFFE
 void MOS6502::nmi() {   // Read from 0xFFFA
     // Push PC on the stack
     // Write first the high because the stack decrease
-    address = 0x0100 + S--;
+    address = STACK_OFFSET + S--;
     data_bus = (PC >> 8) & 0x00FF;
     mem_write();    // write high byte
 
-    address = 0x0100 + S--;
+    address = STACK_OFFSET + S--;
     data_bus = PC & 0x00FF;
     mem_write();    // write low byte
 
@@ -166,7 +161,7 @@ void MOS6502::nmi() {   // Read from 0xFFFA
     set_flag(I, 1);
 
     data_bus = P;
-    address = 0x0100 + S--;
+    address = STACK_OFFSET + S--;
     mem_write();
 
     // Read new PC from the fixed location
@@ -206,6 +201,18 @@ p_state_t MOS6502::get_status() {
 
 void MOS6502::set_PC(uint16_t address) {
     PC = address;
+}
+
+
+void MOS6502::set_log_callback(log_callback log_clb) {
+    log_func = log_clb;
+}
+
+
+void MOS6502::log(const std::string &msg) {
+    if (log_func) {
+        log_func(msg);
+    }
 }
 
 
@@ -579,16 +586,16 @@ bool MOS6502::BRK() {   // DONE
     set_flag(I, true);
 
     // Store PC on stack
-    address = 0x0100 + S--;
+    address = STACK_OFFSET + S--;
     data_bus = (PC >> 8) & 0x00FF;
     mem_write();
-    address = 0x0100 + S--;
+    address = STACK_OFFSET + S--;
     data_bus = PC & 0x00FF;
     mem_write();
 
     // Store P on stack
     set_flag(B, true);
-    address = 0x0100 + S--;
+    address = STACK_OFFSET + S--;
     data_bus = P;
     mem_write();
     set_flag(B, false);
@@ -759,11 +766,11 @@ bool MOS6502::JSR() {   // DONE
     tmp_buff = address;
 
     data_bus = (PC >> 8) & 0x00FF;
-    address = 0x0100 + S--;
+    address = STACK_OFFSET + S--;
     mem_write();
 
     data_bus = PC & 0x00FF;
-    address = 0x0100 + S--;
+    address = STACK_OFFSET + S--;
     mem_write();
 
     address = tmp_buff;
@@ -845,7 +852,7 @@ bool MOS6502::ORA() {   // DONE
 
 bool MOS6502::PHA() {   // DONE
     data_bus = A;
-    address = 0x0100 + S--;
+    address = STACK_OFFSET + S--;
     mem_write();
     return false;
 }
@@ -855,7 +862,7 @@ bool MOS6502::PHP() {   // DONE
     set_flag(U, true);
 
     data_bus = P;
-    address = 0x0100 + S--;
+    address = STACK_OFFSET + S--;
     mem_write();
     set_flag(B, false);
     set_flag(U, false);
@@ -865,7 +872,7 @@ bool MOS6502::PHP() {   // DONE
 
 bool MOS6502::PLA() {   // DONE
     S++;
-    address = 0x0100 + S;
+    address = STACK_OFFSET + S;
     mem_read();
     A = data_bus;
     set_flag(Z, A == 0x00);
@@ -876,7 +883,7 @@ bool MOS6502::PLA() {   // DONE
 
 bool MOS6502::PLP() {   // DONE
     S++;
-    address = 0x0100 + S;
+    address = STACK_OFFSET + S;
     mem_read();
     P = data_bus;
     set_flag(B, false);
@@ -912,18 +919,18 @@ bool MOS6502::ROR() {   // DONE
 
 bool MOS6502::RTI() {   // DONE
     S++;
-    address = 0x0100 + S;
+    address = STACK_OFFSET + S;
     mem_read();
     P = data_bus;
     P &= ~B;
     P &= ~U;
 
     S++;
-    address = 0x0100 + S;
+    address = STACK_OFFSET + S;
     mem_read();
     tmp_buff = (uint16_t)data_bus;
     S++;
-    address = 0x0100 + S;
+    address = STACK_OFFSET + S;
     mem_read();
     tmp_buff |= (uint16_t)data_bus << 8;
 
@@ -934,11 +941,11 @@ bool MOS6502::RTI() {   // DONE
 
 bool MOS6502::RTS() {   // DONE
     S++;
-    address = 0x0100 + S;
+    address = STACK_OFFSET + S;
     mem_read();
     tmp_buff = (uint16_t)data_bus;
     S++;
-    address = 0x0100 + S;
+    address = STACK_OFFSET + S;
     mem_read();
     tmp_buff |= (uint16_t)data_bus << 8;
 
@@ -1117,6 +1124,6 @@ bool MOS6502::RRA() {
 
 
 bool MOS6502::XXX() {
-    log_e("Executed illegal opcode");
+    log("Executed illegal opcode");
     return false;
 }

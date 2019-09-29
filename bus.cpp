@@ -10,9 +10,17 @@ Bus::Bus(Cartridge *p_cartridge) : cartridge(p_cartridge) {
 }
 
 
-void Bus::access(const uint16_t address, const access_mode_t read_write, uint8_t &data) {
+void Bus::access(void *p_self,
+                 const uint16_t address, const access_mode_t read_write, uint8_t &data) {
 
-    if (cartridge->cpu_mem_access(address, read_write, data)) {
+    Bus *self = (Bus *) p_self;
+
+    if (self == nullptr) {
+        log_e("This is null in the memory access callback");
+        return;
+    }
+
+    if (self->cartridge->cpu_mem_access(address, read_write, data)) {
         // The cartridge "sees all" and has the facility to veto
         // the propagation of the bus transaction if it requires.
         // This allows the cartridge to map any address to some
@@ -27,11 +35,11 @@ void Bus::access(const uint16_t address, const access_mode_t read_write, uint8_t
         // the bottom 11 bits is the same as addr % 2048.
         switch (read_write) {
         case access_mode_t::READ:
-            data = RAM[address];
+            data = self->RAM[address];
             break;
 
         case access_mode_t::WRITE:
-            RAM[address] = data;
+            self->RAM[address] = data;
             break;
 
         default:

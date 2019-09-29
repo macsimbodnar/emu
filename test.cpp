@@ -32,7 +32,7 @@ TEST_CASE("Test") {
     REQUIRE(nestest.is_valid());
 
     Bus b(&nestest);
-    MOS6502 cpu(&b);
+    MOS6502 cpu(Bus::access, &b);
     cpu.reset();
     cpu.set_PC(TEST_START_LOCATION);
     previous_state = cpu.get_status();

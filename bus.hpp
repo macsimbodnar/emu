@@ -19,7 +19,7 @@ class Bus {
   public:
     Bus(Cartridge *cartridge);
 
-    void access(const uint16_t address, const access_mode_t read_write, uint8_t &data);
+    static void access(void * self, const uint16_t address, const access_mode_t read_write, uint8_t &data);
 
     size_t get_mem_size();
     uint8_t *get_mem_ptr();
