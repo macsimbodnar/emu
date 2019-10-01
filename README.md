@@ -63,7 +63,7 @@ The First page is called **Zero Page** (from 0x0000 to 0x00FF) and is special. T
 
 The second page (from 0x0100 t 0x01FF) is used for the stack. By reference the stack pointer is set to 0x01FD and decreases during the use.
 
-The `*` near the byte in the in the memory corner means the Program counter currently point here. The `$` is the current address selected on the data bus (this is the address where the current data is read or written). The `#` means that `*` and `$` point to the same memory location.
+The `*` near the byte in the memory corner means the Program counter currently point here. The `$` is the current address selected on the data bus (this is the address where the current data is read or written). The `#` means that `*` and `$` point to the same memory location.
 
 
 In the right corner are printed all processor states like the register A, the indexes X and Y, the Stack Pointer, the Program Counter and some more information not present in the real processor but used by me for the inner logic.
@@ -87,6 +87,7 @@ The **EMU** is case insensitive for now
 # TODOs
 
 ### Now
+* Implement decimal mode
 * Make processor cycle precise (each clock tick should change the inner status of the processor like in this [simulator](http://www.visual6502.org/JSSim/index.html))
 * Check if the opcode table is correct in terms of cycles
 * Test the interrupts
@@ -148,6 +149,12 @@ The **EMU** is case insensitive for now
 * Unofficial opcodes [information](https://wiki.nesdev.com/w/index.php/CPU_unofficial_opcodes)
 
 * More unofficial opcodes [information](https://wiki.nesdev.com/w/index.php/Programming_with_unofficial_opcodes)
+
+* Detailed [document](http://atarihq.com/danb/files/64doc.txt) about the processor behavior
+
+* Synertek programming [manual](http://archive.6502.org/datasheets/synertek_programming_manual.pdf)
+
+* Synertek hardware [manual](http://archive.6502.org/datasheets/synertek_hardware_manual.pdf)
 
 * [Datasheet](https://www.mdawson.net/vic20chrome/cpu/mos_6500_mpu_preliminary_may_1976.pdf)
 
