@@ -1,21 +1,119 @@
 # Another MOS 6502 Emulator
 This is my implementation of the MOS6502 processor emulator
 
+
+
 # Project overview
-* To **compile** all project just type in the root folder `make all`. 
+* `libs`:
+    * `doctest.h`: C++ test framework
+
+* `resources`:
+    * `hex_to_bin.py`: Python3 script that take in input a hex formatted file and translate it into a binary file ignoring special characters. To run is type: `python3 hex_to_bin.py my_hex_file.hex` and teh output will be in `my_hex_file.bin`. You can load the binary directly int the emu.
+    * `nestest.log`: Nintendulator logs of the execution of `nestest.nes`. It is used to test my processor.
+    * `nestest.nes`: NES Cartridge with the test almost all of the mos6502 functionalities. Also include tests of the unofficial opcodes
+    * `program.hex`: this is the example program to run on the emu. The source is: 
+        ```assembly
+        LDX #10
+        STX $0000
+        LDX #3
+        STX $0001
+        LDY $0000
+        LDA #0
+        CLC
+        loop
+        ADC $0001
+        DEY
+        BNE loop
+        STA $0002
+        NOP
+        NOP
+        NOP
+        ```
+    * `program.bin`: This is the binary version of the `program.hex`
+
+* `common`: Contains some common data types that a potential user of MOS6502 class will need
+
+* `console`: This is a console program that allow to use the mos6502 emulator and perform debug step by step. To run it with a sample program just first build the project and then run `./emu resources/program.bin`
+
+* `mos6502`: Contains the implementation of the mos6502 emulator
+
+* `opcode`: Contains the opcode table that map the instruction code to the addressing mode, operation, size of operation, num of clocks needed ad the mnemonic of the operation
+
+* `test`: This is the file used to test the emulator. It loads the NES Cartridge `nestest.nes`
+
+
+
+## How to compile
+* To **compile the whole project** just type in the root folder `make all`. 
+* To **compile only the test** run `make build_test`
+
+## How to run
 * To **run tests** `make test`
 * To run the **console cpu** controller `./emu name_of_the_binary`, like `./emu resources/program.bin`
 
+## **EMU** user instruction
+First of all you need to set you terminal size at least to 95x30.
 
-TODO
+
+In the left corner you will see the current memory page printed in hex.
+
+In the MOS6502 a memory page is a chunk of memory of the size of 256 bytes and start at the address 0xHH00 and continue up to 0xHHFF. 
+
+The First page is called **Zero Page** (from 0x0000 to 0x00FF) and is special. The processor have shortcut to access this page and have his own addressing mode. The Zero Page is used often like registers. 
+
+The second page (from 0x0100 t 0x01FF) is used for the stack. By reference the stack pointer is set to 0x01FD and decreases during the use.
+
+The `*` near the byte in the in the memory corner means the Program counter currently point here. The `$` is the current address selected on the data bus (this is the address where the current data is read or written). The `#` means that `*` and `$` point to the same memory location.
+
+
+In the right corner are printed all processor states like the register A, the indexes X and Y, the Stack Pointer, the Program Counter and some more information not present in the real processor but used by me for the inner logic.
+
+
+Under below you can find a line with the information about the current instruction.
+
+
+Then we have 5 lines used for print logs.
+
+#### **EMU** commands
+The **EMU** is case insensitive for now
+
+* `b`: show **previous** memory page
+* `c`: perform one clock cycle
+* `l`: print some test log (currently used for debug the log functionality)
+* `n`: show **next** memory page
+* `q`: quit
+
+
+# TODOs
+
+### Now
+* Make processor cycle precise (each clock tick should change the inner status of the processor like in this [simulator](http://www.visual6502.org/JSSim/index.html))
+* Check if the opcode table is correct in terms of cycles
+* Test the interrupts
+* Expand current test to check also the num of cycles
+* Better interface for the **EMU**
+* More user friendly and complex commands for the **EMU**
+* In **EMU** set the current according on the status of the processor. This feature should be turned on and off by the user
+
+### In the future
+* Introduce some other tests beside the `nestest.nes`
+* Will be nice to find more logs of `nestest.nes` and test against it too
+* Integrate into **EMU** the program loader directly from hex formatted file
+* Maybe also integrate (or maybe write) some assembler into **EMU**
+
+
 
 # Credits
 * To [Javidx9](http://www.onelonecoder.com/index.html) for the inspiration
+
+
 
 # Libs
 * **[doctest](https://github.com/onqtam/doctest)**: It's one header C++ fast test framework 
 
 * **[nestest.nes](http://nickmass.com/images/nestest.nes)**: Used with the Nintendulator [logs](http://www.qmtpro.com/~nes/misc/nestest.log) to test the processor. The test consist in compare the log from the my mos6502 after each instruction with the log from the [Nintendulator](https://wiki.nesdev.com/w/index.php/Nintendulator). The **nestest.nes** can be used with and without graphical mode. To perform all test without ppu (like my test) you need to load the cartridge and set the program counter to address 0xC000, like described in this [doc](http://www.qmtpro.com/~nes/misc/nestest.txt). NOTE(max): this will test also the illegal opcodes. 
+
+
 
 # Resources
 * [Javidx9](http://www.onelonecoder.com/index.html)'s NES Emulator [videos](https://www.youtube.com/watch?v=8XmxKPJDGU0&t=1s) and [repo](https://github.com/OneLoneCoder/olcNES). Used like reference for:
@@ -54,6 +152,7 @@ TODO
 * [Datasheet](https://www.mdawson.net/vic20chrome/cpu/mos_6500_mpu_preliminary_may_1976.pdf)
 
 * [Rockwell Datasheet](http://archive.6502.org/datasheets/rockwell_r650x_r651x.pdf) with opcode matrix
+
 
 
 # License
