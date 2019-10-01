@@ -39,15 +39,10 @@ void MOS6502::mem_write() {
 
 
 void MOS6502::clock() {
-    cycles = 0;
 
-    if (cycles == 0) {
-
-        // Reset the ACCUMULATOR addressing mode if set
+    if (microcode_q.is_empty()) {   // Fetch and decode next instruction
         accumulator_addressing = false;
-
         address = PC++;
-
         mem_read();
         opcode = data_bus;
 
@@ -60,26 +55,21 @@ void MOS6502::clock() {
 
         if (opcode_table[opcode].instruction_bytes > 2) {
             mem_access(user_data, PC_executed + 2, access_mode_t::READ, arg2);
+        } // TEST END
+
+        (this->*opcode_table[opcode].addrmode)();
+        (this->*opcode_table[opcode].operation)();
+
+
+    } else {                        // Execute next microcode step
+        microcode_t current_mc;
+
+        if (microcode_q.dequeue(current_mc)) {
+            // Exec the microcode
+        } else {
+            log("Error dequeueing nex microcode instruction");
         }
-
-        // TEST END
-
-        cycles = opcode_table[opcode].cycles;
-
-        bool add = (this->*opcode_table[opcode].addrmode)();
-        bool opp = (this->*opcode_table[opcode].operation)();
-
-        if (opp & add) {
-            cycles += 2;
-        } else if (opp || add) {
-            cycles++;
-        }
-
-        // Always set the unused status flag bit to 1
-        set_flag(U, true);
     }
-
-    cycles--;
 }
 
 
@@ -105,8 +95,6 @@ void MOS6502::reset() {
     address = 0x0000;
     data_bus = 0x00;
     accumulator_addressing = false;
-
-    cycles = 6;
 }
 
 
@@ -138,8 +126,6 @@ void MOS6502::irq() {   // Read from 0xFFFE
         address++;
         mem_read();
         PC = (((uint16_t)data_bus) << 8) | tmp_buff;
-
-        cycles = 7;
     }
 }
 
@@ -171,8 +157,6 @@ void MOS6502::nmi() {   // Read from 0xFFFA
     address++;
     mem_read();
     PC = (((uint16_t)data_bus) << 8) | tmp_buff;
-
-    cycles = 8;
 }
 
 
@@ -190,7 +174,7 @@ p_state_t MOS6502::get_status() {
             address,
             relative_adderess,
             tmp_buff,
-            cycles,
+            0,  // cycles
             opcode_table[opcode].cycles,
             PC_executed,
             arg1,
@@ -475,13 +459,13 @@ bool MOS6502::ASL() {   // DONE
 
 bool MOS6502::BCC() {   // DONE
     if (read_flag(C) == false) {
-        cycles++;
+        // cycles++; 
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
-            cycles++;
-        }
+        // if ((address && 0xFF00) != (PC & 0xFF00)) {
+        //     cycles++;
+        // }
 
         PC = address;
     }
@@ -491,13 +475,13 @@ bool MOS6502::BCC() {   // DONE
 
 bool MOS6502::BCS() {   // DONE
     if (read_flag(C)) {
-        cycles++;
+        // cycles++;
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
-            cycles++;
-        }
+        // if ((address && 0xFF00) != (PC & 0xFF00)) {
+        //     cycles++;
+        // }
 
         PC = address;
     }
@@ -507,13 +491,13 @@ bool MOS6502::BCS() {   // DONE
 
 bool MOS6502::BEQ() {   // DONE
     if (read_flag(Z)) {
-        cycles++;
+        // cycles++;
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
-            cycles++;
-        }
+        // if ((address && 0xFF00) != (PC & 0xFF00)) {
+        //     cycles++;
+        // }
 
         PC = address;
     }
@@ -534,13 +518,13 @@ bool MOS6502::BIT() {   // DONE
 
 bool MOS6502::BMI() {   // DONE
     if (read_flag(N)) {
-        cycles++;
+        // cycles++;
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
-            cycles++;
-        }
+        // if ((address && 0xFF00) != (PC & 0xFF00)) {
+        //     cycles++;
+        // }
 
         PC = address;
     }
@@ -550,13 +534,13 @@ bool MOS6502::BMI() {   // DONE
 
 bool MOS6502::BNE() {   // DONE
     if (read_flag(Z) == false) {
-        cycles++;
+        // cycles++;
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
-            cycles++;
-        }
+        // if ((address && 0xFF00) != (PC & 0xFF00)) {
+        //     cycles++;
+        // }
 
         PC = address;
     }
@@ -566,13 +550,13 @@ bool MOS6502::BNE() {   // DONE
 
 bool MOS6502::BPL() {   // DONE
     if (read_flag(N) == false) {
-        cycles++;
+        // cycles++;
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
-            cycles++;
-        }
+        // if ((address && 0xFF00) != (PC & 0xFF00)) {
+        //     cycles++;
+        // }
 
         PC = address;
     }
@@ -613,13 +597,13 @@ bool MOS6502::BRK() {   // DONE
 
 bool MOS6502::BVC() {   // DONE
     if (read_flag(O) == false) {
-        cycles++;
+        // cycles++;
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
-            cycles++;
-        }
+        // if ((address && 0xFF00) != (PC & 0xFF00)) {
+        //     cycles++;
+        // }
 
         PC = address;
     }
@@ -629,13 +613,13 @@ bool MOS6502::BVC() {   // DONE
 
 bool MOS6502::BVS() {   // DONE
     if (read_flag(O)) {
-        cycles++;
+        // cycles++;
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
-            cycles++;
-        }
+        // if ((address && 0xFF00) != (PC & 0xFF00)) {
+        //     cycles++;
+        // }
 
         PC = address;
     }

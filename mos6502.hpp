@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <vector>
 #include "common.hpp"
+#include "util.hpp"
+
 
 #define STACK_POINTER_DEFAULT     0xFD
 #define PROCESSOR_STATUS_DEFAULT  0x24
@@ -65,6 +67,10 @@ class MOS6502 {
         unsigned int instruction_bytes = 0;
     };
 
+    struct microcode_t {
+        int x;
+    };
+
 
     /********************************************************
      *                    NEEDED TO WORK                    *
@@ -72,14 +78,13 @@ class MOS6502 {
     mem_access_callback mem_access = nullptr;     // Callback used to access the memory
     void *user_data = nullptr;                    // User passed like first argument to the mem_access
 
-    unsigned int cycles;                          // Cycles left to finish the current instruction
     uint8_t opcode;                               // Current opcode
     uint8_t data_bus;                             // Data currently on the bus
     uint16_t address = INITIAL_ADDRESS;           // Current abbsolute address
     uint16_t relative_adderess;                   // Current abbsolute address
 
-    bool accumulator_addressing =
-        false;          // Is True when the current instruction is used with accumulator addressing (the current data is fetched from or written to the A register)
+    bool accumulator_addressing = false;          // Is True when the current instruction is used with
+    //                                               accumulator addressing(the current data is fetched from or written to the A register)
 
     uint16_t tmp_buff;                            // Temporary 16-bit buffer
 
@@ -87,7 +92,7 @@ class MOS6502 {
     // The vector is 256 size long and the opcode byte match the correct addressing mode and function
     static const std::vector<instruction_t> opcode_table;
 
-
+    Queue<microcode_t, 10> microcode_q;
 
     /********************************************************
      *                     DEBUG / TEST                     *

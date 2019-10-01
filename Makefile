@@ -7,7 +7,7 @@ ALLOBJ = mos6502.o opcode.o util.o
 
 all: console.o build_test
 
-mos6502.o: mos6502.cpp mos6502.hpp common.hpp opcode.o
+mos6502.o: mos6502.cpp mos6502.hpp common.hpp opcode.o util.o
 	$(CXX) $(FLAGS) -c -o mos6502.o mos6502.cpp
 
 opcode.o: opcode.cpp mos6502.hpp
