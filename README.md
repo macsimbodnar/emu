@@ -33,7 +33,7 @@ This is my implementation of the MOS6502 processor emulator
 
 * `common`: Contains some common data types that a potential user of MOS6502 class will need
 
-* `console`: This is a console program that allow to use the mos6502 emulator and perform debug step by step. To run it with a sample program just first build the project and then run `./emu resources/program.bin`
+* `console`: This is a console program called **EMU** that allow to use the mos6502 emulator and perform debug step by step. To run it with a sample program just first build the project and then run `./emu resources/program.bin`
 
 * `mos6502`: Contains the implementation of the mos6502 emulator
 
