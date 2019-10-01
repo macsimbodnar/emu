@@ -37,7 +37,7 @@ This is my implementation of the MOS6502 processor emulator
 
 * `mos6502`: Contains the implementation of the mos6502 emulator
 
-* `opcode`: Contains the opcode table that map the instruction code to the addressing mode, operation, size of operation, num of clocks needed ad the mnemonic of the operation
+* `opcode`: Contains the opcode table that map the instruction code to the addressing mode, operation, size of operation, num of clocks needed ad the mnemonic of the operation. The mnemonic prefixed by the `*` are **unofficial** operations.
 
 * `test`: This is the file used to test the emulator. It loads the NES Cartridge `nestest.nes`
 
