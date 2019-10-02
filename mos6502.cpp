@@ -479,7 +479,7 @@ bool MOS6502::BCC() {   // DONE
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
+        if ((address & 0xFF00) != (PC & 0xFF00)) {
             cycles++;
         }
 
@@ -495,7 +495,7 @@ bool MOS6502::BCS() {   // DONE
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
+        if ((address & 0xFF00) != (PC & 0xFF00)) {
             cycles++;
         }
 
@@ -511,7 +511,7 @@ bool MOS6502::BEQ() {   // DONE
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
+        if ((address & 0xFF00) != (PC & 0xFF00)) {
             cycles++;
         }
 
@@ -538,7 +538,7 @@ bool MOS6502::BMI() {   // DONE
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
+        if ((address & 0xFF00) != (PC & 0xFF00)) {
             cycles++;
         }
 
@@ -554,7 +554,7 @@ bool MOS6502::BNE() {   // DONE
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
+        if ((address & 0xFF00) != (PC & 0xFF00)) {
             cycles++;
         }
 
@@ -570,7 +570,7 @@ bool MOS6502::BPL() {   // DONE
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
+        if ((address & 0xFF00) != (PC & 0xFF00)) {
             cycles++;
         }
 
@@ -617,7 +617,7 @@ bool MOS6502::BVC() {   // DONE
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
+        if ((address & 0xFF00) != (PC & 0xFF00)) {
             cycles++;
         }
 
@@ -633,7 +633,7 @@ bool MOS6502::BVS() {   // DONE
 
         address = PC + relative_adderess;
 
-        if ((address && 0xFF00) != (PC & 0xFF00)) {
+        if ((address & 0xFF00) != (PC & 0xFF00)) {
             cycles++;
         }
 
