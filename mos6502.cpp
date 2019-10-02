@@ -1,5 +1,7 @@
 #include "mos6502.hpp"
 
+#define MICROCODE(code) microcode_q.enqueue(([](MOS6502 * cpu) -> void { code })
+
 
 MOS6502::MOS6502(mem_access_callback mem_acc_clb, void *usr_data) :
     mem_access(mem_acc_clb), user_data(usr_data) {}
@@ -62,10 +64,11 @@ void MOS6502::clock() {
 
 
     } else {                        // Execute next microcode step
-        microcode_t current_mc;
+        micro_op_t micro_operation;
 
-        if (microcode_q.dequeue(current_mc)) {
+        if (microcode_q.dequeue(micro_operation)) {
             // Exec the microcode
+            micro_operation(this);
         } else {
             log("Error dequeueing nex microcode instruction");
         }
@@ -459,7 +462,7 @@ bool MOS6502::ASL() {   // DONE
 
 bool MOS6502::BCC() {   // DONE
     if (read_flag(C) == false) {
-        // cycles++; 
+        // cycles++;
 
         address = PC + relative_adderess;
 

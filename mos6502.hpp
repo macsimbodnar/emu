@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <functional>
 #include <vector>
 #include "common.hpp"
 #include "util.hpp"
@@ -25,7 +26,7 @@ class MOS6502 {
     p_state_t get_status();               // Return the struct containing the current processor status. NOTE(max): debug/test
     void set_log_callback(log_callback);  // Set the callback used for log. Not mandatory
 
-  private:
+  public:
     /********************************************************
      *                  REGISTERS / FLAGS                   *
      ********************************************************/
@@ -59,16 +60,16 @@ class MOS6502 {
         C = (1 << 0)        // C:  CARRY                1 = True
     };
 
+    typedef void (*operation_t)(void);
+    typedef void (*addrmode_t)(void);
+    typedef void (*micro_op_t)(MOS6502 *self);
+
     struct instruction_t {  // INSTRUCTION
         std::string name;
-        bool (MOS6502::*operation)(void) = nullptr;
-        bool (MOS6502::*addrmode)(void) = nullptr;
-        unsigned int cycles = 0;
-        unsigned int instruction_bytes = 0;
-    };
-
-    struct microcode_t {
-        int x;
+        operation_t operation;
+        addrmode_t addrmode;
+        unsigned int cycles;
+        unsigned int instruction_bytes;
     };
 
 
@@ -92,7 +93,7 @@ class MOS6502 {
     // The vector is 256 size long and the opcode byte match the correct addressing mode and function
     static const std::vector<instruction_t> opcode_table;
 
-    Queue<microcode_t, 10> microcode_q;
+    Queue<micro_op_t, 10> microcode_q;
 
     /********************************************************
      *                     DEBUG / TEST                     *
@@ -110,6 +111,7 @@ class MOS6502 {
     void mem_read();
     void mem_write();
 
+  public:
     void log(const std::string &msg);
 
 

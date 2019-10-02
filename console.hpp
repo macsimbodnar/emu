@@ -34,8 +34,6 @@ class Console {
     void show();
     bool get_input();
 
-    void push_log(const std::string &str);
-
     void set_header_line_2(const char *str, size_t size);
     void set_header_line_3(const char *str, size_t size);
 
@@ -43,4 +41,5 @@ class Console {
   public:
     Console();
     int run(int argc, char **argv);
+    void push_log(const std::string &str);
 };
