@@ -1,5 +1,5 @@
 PROGNAME = emu
-FLAGS = -g -O0 -Wall -Werror
+FLAGS = -g -O0 -Wall -Werror -std=c++17
 
 DOCTEST = -I ./libs
 
