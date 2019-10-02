@@ -26,7 +26,6 @@ class Console {
 
     std::array<std::string, LOG_LINES> logs;
     unsigned int log_head = 0;
-    unsigned int log_count = 0;
 
     void draw_memory();
     void draw_status();

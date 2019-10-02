@@ -204,7 +204,7 @@ static void mem_callback(void *usr_data,
     // If here means the address is have to be handled by the PPU. Is ignored for this test
     if (address >= 0x2000 && address <= 0x3FFF) {
         log_clb("PPU mem access. Access type: " +
-                (read_write == access_mode_t::READ) ? "READ" : "WRITE" +
+                ((read_write == access_mode_t::READ) ? std::string("READ") : std::string("WRITE")) +
                 std::string(" at address ") + std::to_string(address) +
                 std::string(" with data value: ") + std::to_string(data));
 
@@ -267,9 +267,9 @@ static bool load_NES_cartridge(const char *file, NES_cartridge_t &cartridge_out)
     cartridge_out.prg_memory.resize(cartridge_out.prg_banks * NES_PRG_BANK_SIZE);
 
     size_t read_res = fread((uint8_t *) cartridge_out.prg_memory.data(),
-                         sizeof(uint8_t),
-                         cartridge_out.prg_memory.size(),
-                         fp);
+                            sizeof(uint8_t),
+                            cartridge_out.prg_memory.size(),
+                            fp);
 
     if (read_res != cartridge_out.prg_memory.size()) {
         log_clb("Failed read the cartridge program memory from file: " + std::string(file));
