@@ -3,3 +3,4 @@ emu
 documentation
 .vscode
 test
+*.dSYM
