@@ -59,8 +59,8 @@ void MOS6502::clock() {
             mem_access(user_data, PC_executed + 2, access_mode_t::READ, arg2);
         } // TEST END
 
-        opcode_table[opcode].addrmode();
-        opcode_table[opcode].operation();
+        (this->*opcode_table[opcode].addrmode)();
+        (this->*opcode_table[opcode].operation)();
 
     } else {                        // Execute next microcode step
         micro_op_t micro_operation;
@@ -211,6 +211,8 @@ void MOS6502::ACC() {   // DONE
 
 void MOS6502::IMM() {   // DONE
     address = PC++;
+
+    // TODO(max): this one after decode the opcode start to execute it
 }
 
 void MOS6502::ABS() {   // DONE
@@ -433,7 +435,7 @@ void MOS6502::IND() {   // DONE
         cpu->lo = cpu->data_bus;
     {
         /* NOTE(max): this one is here because without artistic style go crazy and format ad mentula canis */
-        if (cpu->lo == 0x00FF) { // Page boundary hardware bug
+        if (cpu->lo == 0x00FF) { /* Page boundary hardware bug */
             cpu->address = cpu->tmp_buff & 0xFF00;
         } else {
             cpu->address = cpu->tmp_buff + 1;
@@ -453,697 +455,771 @@ void MOS6502::IND() {   // DONE
 /********************************************************
  *                   INSTRUCTION SET                    *
  ********************************************************/
-bool MOS6502::ADC() {   // DONE
-    mem_read();
+void MOS6502::ADC() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
 
-    // add is done in 16bit mode to catch the carry bit
-    tmp_buff = (uint16_t)A + (uint16_t)data_bus + (read_flag(C) ? 0x0001 : 0x0000);
+        /* add is done in 16bit mode to catch the carry bit */
+        cpu->tmp_buff = (uint16_t)cpu->A + (uint16_t)cpu->data_bus + (cpu->read_flag(
+                            MOS6502::C) ? 0x0001 : 0x0000);
 
-    set_flag(C, tmp_buff > 0x00FF);                 // Set the carry bit
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);     // Set Zero bit
-    // Set Overflow bit
-    set_flag(O, (~((uint16_t)(A ^ data_bus) & 0x00FF) & ((uint16_t)A ^ tmp_buff) & 0x0080));
-    set_flag(N, tmp_buff & 0x80);                   // Set the Negative bit
+        cpu->set_flag(MOS6502::C, cpu->tmp_buff > 0x00FF);                 /* Set the carry bit */
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);     /* Set Zero bit */
+        /* Set Overflow bit */
+        cpu->set_flag(MOS6502::O, (~((uint16_t)(cpu->A ^ cpu->data_bus) & 0x00FF) &
+                                   ((uint16_t)cpu->A ^ cpu->tmp_buff) & 0x0080));
+        cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x80);                   /* Set the Negative bit */
 
-    A = tmp_buff & 0x00FF;
-
-    return true;
+        cpu->A = cpu->tmp_buff & 0x00FF;
+    );
 }
 
-bool MOS6502::AND() {   // DONE
-    mem_read();
-    A = A & data_bus;
+void MOS6502::AND() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->A = cpu->A & cpu->data_bus;
 
-    set_flag(Z, A == 0x00);
-    set_flag(N, A & 0x80);
-    return true;
+        cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->A & 0x80);
+    );
 }
 
-bool MOS6502::ASL() {   // DONE
-    mem_read();
-    tmp_buff = ((uint16_t)data_bus) << 1;
+void MOS6502::ASL() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff = ((uint16_t)cpu->data_bus) << 1;
 
-    set_flag(C, (tmp_buff & 0xFF00) > 0);
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(N, tmp_buff & 0x0080);
+        cpu->set_flag(MOS6502::C, (cpu->tmp_buff & 0xFF00) > 0);
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
+        cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
+    );
 
-    data_bus = tmp_buff & 0x00FF;
-    mem_write();
-
-    return false;
+    MICROCODE(
+        cpu->data_bus = cpu->tmp_buff & 0x00FF;
+        cpu->mem_write();
+    );
 }
 
-bool MOS6502::BCC() {   // DONE
-    if (read_flag(C) == false) {
-        // cycles++;
+void MOS6502::BCC() {   // DONE
+    MICROCODE(
 
-        address = PC + relative_adderess;
+    {
+        if (cpu->read_flag(C) == false) {
+            /* cycles++; */
 
-        // if ((address & 0xFF00) != (PC & 0xFF00)) {
-        //     cycles++;
-        // }
+            cpu->address = cpu->PC + cpu->relative_adderess;
 
-        PC = address;
+            /*
+            if ((address & 0xFF00) != (PC & 0xFF00)) {
+                 cycles++;
+            }
+            */
+
+            cpu->PC = cpu->address;
+        }
     }
-
-    return false;
+    );
 }
 
-bool MOS6502::BCS() {   // DONE
-    if (read_flag(C)) {
-        // cycles++;
+void MOS6502::BCS() {   // DONE
+    MICROCODE(
 
-        address = PC + relative_adderess;
+    {
+        if (cpu->read_flag(C)) {
+            /* cycles++; */
 
-        // if ((address & 0xFF00) != (PC & 0xFF00)) {
-        //     cycles++;
-        // }
+            cpu->address = cpu->PC + cpu->relative_adderess;
 
-        PC = address;
+            /*
+            if ((address & 0xFF00) != (PC & 0xFF00)) {
+                cycles++;
+            }
+            */
+
+            cpu->PC = cpu->address;
+        }
     }
-
-    return false;
+    );
 }
 
-bool MOS6502::BEQ() {   // DONE
-    if (read_flag(Z)) {
-        // cycles++;
+void MOS6502::BEQ() {   // DONE
+    MICROCODE(
 
-        address = PC + relative_adderess;
+    {
+        if (cpu->read_flag(Z)) {
+            /* cycles++; */
 
-        // if ((address & 0xFF00) != (PC & 0xFF00)) {
-        //     cycles++;
-        // }
+            cpu->address = cpu->PC + cpu->relative_adderess;
+            /*
+            if ((address & 0xFF00) != (PC & 0xFF00)) {
+                cycles++;
+            }
+            */
 
-        PC = address;
+            cpu->PC = cpu->address;
+        }
     }
-
-    return false;
+    );
 }
 
-bool MOS6502::BIT() {   // DONE
-    mem_read();
-    tmp_buff = A & data_bus;
+void MOS6502::BIT() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff = cpu->A & cpu->data_bus;
 
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x00);
-    set_flag(N, data_bus & (1 << 7));
-    set_flag(O, data_bus & (1 << 6));
-
-    return false;
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->data_bus & (1 << 7));
+        cpu->set_flag(MOS6502::O, cpu->data_bus & (1 << 6));
+    );
 }
 
-bool MOS6502::BMI() {   // DONE
-    if (read_flag(N)) {
-        // cycles++;
+void MOS6502::BMI() {   // DONE
+    MICROCODE(
 
-        address = PC + relative_adderess;
+    {
+        if (cpu->read_flag(MOS6502::N)) {
+            /* cycles++; */
 
-        // if ((address & 0xFF00) != (PC & 0xFF00)) {
-        //     cycles++;
-        // }
+            cpu->address = cpu->PC + cpu->relative_adderess;
+            /*
+            if ((address & 0xFF00) != (PC & 0xFF00)) {
+                cycles++;
+            }
+            */
 
-        PC = address;
+            cpu->PC = cpu->address;
+        }
     }
-
-    return false;
+    );
 }
 
-bool MOS6502::BNE() {   // DONE
-    if (read_flag(Z) == false) {
-        // cycles++;
+void MOS6502::BNE() {   // DONE
+    MICROCODE(
 
-        address = PC + relative_adderess;
+    {
+        if (cpu->read_flag(MOS6502::Z) == false) {
+            /* cycles++; */
 
-        // if ((address & 0xFF00) != (PC & 0xFF00)) {
-        //     cycles++;
-        // }
+            cpu->address = cpu->PC + cpu->relative_adderess;
+            /*
+            if ((address & 0xFF00) != (PC & 0xFF00)) {
+                cycles++;
+            }
+            */
 
-        PC = address;
+            cpu->PC = cpu->address;
+        }
     }
-
-    return false;
+    );
 }
 
-bool MOS6502::BPL() {   // DONE
-    if (read_flag(N) == false) {
-        // cycles++;
+void MOS6502::BPL() {   // DONE
+    MICROCODE(
 
-        address = PC + relative_adderess;
+    {
+        if (cpu->read_flag(MOS6502::N) == false) {
+            /* cycles++; */
 
-        // if ((address & 0xFF00) != (PC & 0xFF00)) {
-        //     cycles++;
-        // }
+            cpu->address = cpu->PC + cpu->relative_adderess;
+            /*
+            if ((address & 0xFF00) != (PC & 0xFF00)) {
+                cycles++;
+            }
+            */
 
-        PC = address;
+            cpu->PC = cpu->address;
+        }
     }
-
-    return false;
+    );
 }
 
-bool MOS6502::BRK() {   // DONE
-    PC++;
+void MOS6502::BRK() {   // DONE
+    MICROCODE(
+        cpu->PC++;
 
-    set_flag(I, true);
+        cpu->set_flag(MOS6502::I, true);
 
-    // Store PC on stack
-    address = STACK_OFFSET + S--;
-    data_bus = (PC >> 8) & 0x00FF;
-    mem_write();
-    address = STACK_OFFSET + S--;
-    data_bus = PC & 0x00FF;
-    mem_write();
+        /* Store PC on stack */
+        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->data_bus = (cpu->PC >> 8) & 0x00FF;
+        cpu->mem_write();
+    );
 
-    // Store P on stack
-    set_flag(B, true);
-    address = STACK_OFFSET + S--;
-    data_bus = P;
-    mem_write();
-    set_flag(B, false);
+    MICROCODE(
+        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->data_bus = cpu->PC & 0x00FF;
+        cpu->mem_write();
+    );
 
-    // Set PC from address  $FFFE
-    address = 0xFFFE;
-    mem_read();
-    tmp_buff = data_bus & 0x00FF;
-    address = 0xFFFF;
-    mem_read();
-    PC = ((((uint16_t)data_bus) << 8) & 0xFF00) | tmp_buff;
+    MICROCODE(
+        /* Store P on stack */
+        cpu->set_flag(MOS6502::B, true);
+        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->data_bus = cpu->P;
+        cpu->mem_write();
+        cpu->set_flag(MOS6502::B, false);
+    );
 
-    return false;
+    MICROCODE(
+        /* Set PC from address  $FFFE and $FFFF */
+        cpu->address = 0xFFFE;
+        cpu->mem_read();
+        cpu->tmp_buff = cpu->data_bus & 0x00FF;
+    );
+
+    MICROCODE(
+        cpu->address = 0xFFFF;
+        cpu->mem_read();
+        cpu->PC = ((((uint16_t)cpu->data_bus) << 8) & 0xFF00) | cpu->tmp_buff;
+    );
 }
 
-bool MOS6502::BVC() {   // DONE
-    if (read_flag(O) == false) {
-        // cycles++;
+void MOS6502::BVC() {   // DONE
+    MICROCODE(
 
-        address = PC + relative_adderess;
+    {
+        if (cpu->read_flag(MOS6502::O) == false) {
+            /* cycles++; */
 
-        // if ((address & 0xFF00) != (PC & 0xFF00)) {
-        //     cycles++;
-        // }
+            cpu->address = cpu->PC + cpu->relative_adderess;
+            /*
+            if ((address & 0xFF00) != (PC & 0xFF00)) {
+                cycles++;
+            }
+            */
 
-        PC = address;
+            cpu->PC = cpu->address;
+        }
     }
-
-    return false;
+    );
 }
 
-bool MOS6502::BVS() {   // DONE
-    if (read_flag(O)) {
-        // cycles++;
+void MOS6502::BVS() {   // DONE
+    MICROCODE(
 
-        address = PC + relative_adderess;
+    {
+        if (cpu->read_flag(MOS6502::O)) {
+            /* cycles++; */
 
-        // if ((address & 0xFF00) != (PC & 0xFF00)) {
-        //     cycles++;
-        // }
+            cpu->address = cpu->PC + cpu->relative_adderess;
+            /*
+            if ((address & 0xFF00) != (PC & 0xFF00)) {
+                cycles++;
+            }
+            */
 
-        PC = address;
+            cpu->PC = cpu->address;
+        }
     }
-
-    return false;
+    );
 }
 
-bool MOS6502::CLC() {   // DONE
-    set_flag(C, false);
-    return false;
+void MOS6502::CLC() {   // DONE
+    MICROCODE(
+        cpu->set_flag(MOS6502::C, false);
+    );
 }
 
-bool MOS6502::CLD() {   //DONE
-    set_flag(D, false);
-    return false;
+void MOS6502::CLD() {   //DONE
+    MICROCODE(
+        cpu->set_flag(MOS6502::D, false);
+    );
 }
 
-bool MOS6502::CLI() {   // DONE
-    set_flag(I, false);
-    return false;
+void MOS6502::CLI() {   // DONE
+    MICROCODE(
+        cpu->set_flag(MOS6502::I, false);
+    );
 }
 
-bool MOS6502::CLV() {   // DONE
-    set_flag(O, false);
-    return false;
+void MOS6502::CLV() {   // DONE
+    MICROCODE(
+        cpu->set_flag(MOS6502::O, false);
+    );
 }
 
-bool MOS6502::CMP() {   // DONE
-    mem_read();
-    tmp_buff = (uint16_t)A - (uint16_t)data_bus;
-    set_flag(C, A >= data_bus);
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(N, tmp_buff & 0x0080);
-
-    return true;
+void MOS6502::CMP() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff = (uint16_t)cpu->A - (uint16_t)cpu->data_bus;
+        cpu->set_flag(MOS6502::C, cpu->A >= cpu->data_bus);
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
+        cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
+    );
 }
 
-bool MOS6502::CPX() {   // DONE
-    mem_read();
-    tmp_buff = (uint16_t)X - (uint16_t)data_bus;
-    set_flag(C, X >= data_bus);
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(N, tmp_buff & 0x0080);
-
-    return false;
+void MOS6502::CPX() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff = (uint16_t)cpu->X - (uint16_t)cpu->data_bus;
+        cpu->set_flag(MOS6502::C, cpu->X >= cpu->data_bus);
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
+        cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
+    );
 }
 
-bool MOS6502::CPY() {   // DONE
-    mem_read();
-    tmp_buff = (uint16_t)Y - (uint16_t)data_bus;
-    set_flag(C, Y >= data_bus);
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(N, tmp_buff & 0x0080);
-
-    return false;
+void MOS6502::CPY() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff = (uint16_t)cpu->Y - (uint16_t)cpu->data_bus;
+        cpu->set_flag(MOS6502::C, cpu->Y >= cpu->data_bus);
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
+        cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
+    );
 }
 
-bool MOS6502::DEC() {   // DONE
-    mem_read();
-    tmp_buff = data_bus - 1;
-    data_bus = tmp_buff & 0x00FF;
-    mem_write();
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(N, tmp_buff & 0x0080);
+void MOS6502::DEC() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff = cpu->data_bus - 1;
+        cpu->data_bus = cpu->tmp_buff & 0x00FF;
+    );
 
-    return false;
+    MICROCODE(
+        cpu->mem_write();
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
+        cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
+    );
 }
 
-bool MOS6502::DEX() {   // DONE
-    X--;
-    set_flag(Z, X == 0x00);
-    set_flag(N, X & 0x80);
-
-    return false;
+void MOS6502::DEX() {   // DONE
+    MICROCODE(
+        cpu->X--;
+        cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->X & 0x80);
+    );
 }
 
-bool MOS6502::DEY() {   // DONE
-    Y--;
-    set_flag(Z, Y == 0x00);
-    set_flag(N, Y & 0x80);
-
-    return false;
+void MOS6502::DEY() {   // DONE
+    MICROCODE(
+        cpu->Y--;
+        cpu->set_flag(MOS6502::Z, cpu->Y == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->Y & 0x80);
+    );
 }
 
-bool MOS6502::EOR() {   // DONE
-    mem_read();
-    A = data_bus ^ A;
-    set_flag(Z, A == 0x00);
-    set_flag(N, A & 0x80);
-    return true;
+void MOS6502::EOR() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->A = cpu->data_bus ^ cpu->A;
+        cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->A & 0x80);
+    );
 }
 
-bool MOS6502::INC() {   // DONE
-    mem_read();
-    tmp_buff = data_bus + 1;
-    data_bus = tmp_buff & 0x00FF;
-    mem_write();
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(N, tmp_buff & 0x0080);
+void MOS6502::INC() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff = cpu->data_bus + 1;
+        cpu->data_bus = cpu->tmp_buff & 0x00FF;
+    );
 
-    return false;
+    MICROCODE(
+        cpu->mem_write();
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
+        cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
+
+    );
 }
 
-bool MOS6502::INX() {   // DONE
-    X++;
-    set_flag(Z, X == 0x00);
-    set_flag(N, X & 0x80);
-
-    return false;
+void MOS6502::INX() {   // DONE
+    MICROCODE(
+        cpu->X++;
+        cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->X & 0x80);
+    );
 }
 
-bool MOS6502::INY() {   // DONE
-    Y++;
-    set_flag(Z, Y == 0x00);
-    set_flag(N, Y & 0x80);
-
-    return false;
+void MOS6502::INY() {   // DONE
+    MICROCODE(
+        cpu->Y++;
+        cpu->set_flag(MOS6502::Z, cpu->Y == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->Y & 0x80);
+    );
 }
 
-bool MOS6502::JMP() {   // DONE
-    PC = address;
-    return false;
+void MOS6502::JMP() {   // DONE
+    MICROCODE(
+        cpu->PC = cpu->address;
+    );
 }
 
-bool MOS6502::JSR() {   // DONE
-    PC--;
+void MOS6502::JSR() {   // DONE
+    MICROCODE(
+        cpu->PC--;
 
-    tmp_buff = address;
+        cpu->tmp_buff = cpu->address;
 
-    data_bus = (PC >> 8) & 0x00FF;
-    address = STACK_OFFSET + S--;
-    mem_write();
+        cpu->data_bus = (cpu->PC >> 8) & 0x00FF;
+        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->mem_write();
+    );
 
-    data_bus = PC & 0x00FF;
-    address = STACK_OFFSET + S--;
-    mem_write();
+    MICROCODE(
+        cpu->data_bus = cpu->PC & 0x00FF;
+        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->mem_write();
 
-    address = tmp_buff;
-    PC = address;
-
-    return false;
+        cpu->address = cpu->tmp_buff;
+        cpu->PC = cpu->address;
+    );
 }
 
-bool MOS6502::LDA() {   // DONE
-    mem_read();
-    A = data_bus;
+void MOS6502::LDA() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->A = cpu->data_bus;
 
-    set_flag(Z, A == 0x00);
-    set_flag(N, A & 0x80);
-
-    return true;
+        cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->A & 0x80);
+    );
 }
 
-bool MOS6502::LDX() {   // DONE
-    mem_read();
-    X = data_bus;
+void MOS6502::LDX() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->X = cpu->data_bus;
 
-    set_flag(Z, X == 0x00);
-    set_flag(N, X & 0x80);
-
-    return true;
+        cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->X & 0x80);
+    );
 }
 
-bool MOS6502::LDY() {   // DONE
-    mem_read();
-    Y = data_bus;
+void MOS6502::LDY() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->Y = cpu->data_bus;
 
-    set_flag(Z, Y == 0x00);
-    set_flag(N, Y & 0x80);
-
-    return true;
+        cpu->set_flag(MOS6502::Z, cpu->Y == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->Y & 0x80);
+    );
 }
 
-bool MOS6502::LSR() {   // DONE
-    mem_read();
+void MOS6502::LSR() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
 
-    set_flag(C, data_bus & 0x01);
+        cpu->set_flag(MOS6502::C, cpu->data_bus & 0x01);
 
-    tmp_buff = data_bus >> 1;
+        cpu->tmp_buff = cpu->data_bus >> 1;
 
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    // set_flag(N, tmp_buff & 0x0080);
-    set_flag(N, false);
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
+        /* cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080); */
+        cpu->set_flag(MOS6502::N, false);
+    );
 
-    data_bus = tmp_buff & 0x00FF;
-    mem_write();
-
-    return false;
+    MICROCODE(
+        cpu->data_bus = cpu->tmp_buff & 0x00FF;
+        cpu->mem_write();
+    );
 }
 
-bool MOS6502::NOP() {   // DONE
+void MOS6502::NOP() {   // DONE
     // TODO(max): handle different nops
-    switch (opcode) {
-    case 0x1C:
-    case 0x3C:
-    case 0x5C:
-    case 0x7C:
-    case 0xDC:
-    case 0xFC:
-        return true;
-        break;
-    }
+    // switch (opcode) {
+    // case 0x1C:
+    // case 0x3C:
+    // case 0x5C:
+    // case 0x7C:
+    // case 0xDC:
+    // case 0xFC:
 
-    return false;
+    //     break;
+    // }
+    MICROCODE(
+        asm("nop");
+    );
 }
 
-bool MOS6502::ORA() {   // DONE
-    mem_read();
-    A = A | data_bus;
-    set_flag(Z, A == 0x00);
-    set_flag(N, A & 0x80);
-    return true;
+void MOS6502::ORA() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->A = cpu->A | cpu->data_bus;
+        cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->A & 0x80);
+    );
 }
 
-bool MOS6502::PHA() {   // DONE
-    data_bus = A;
-    address = STACK_OFFSET + S--;
-    mem_write();
-    return false;
+void MOS6502::PHA() {   // DONE
+    MICROCODE(
+        cpu->data_bus = cpu->A;
+        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->mem_write();
+    );
 }
 
-bool MOS6502::PHP() {   // DONE
-    set_flag(B, true);
-    set_flag(U, true);
+void MOS6502::PHP() {   // DONE
+    MICROCODE(
+        cpu->set_flag(MOS6502::B, true);
+        cpu->set_flag(MOS6502::U, true);
 
-    data_bus = P;
-    address = STACK_OFFSET + S--;
-    mem_write();
-    set_flag(B, false);
-    set_flag(U, false);
-
-    return false;
+        cpu->data_bus = cpu->P;
+        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->mem_write();
+        cpu->set_flag(MOS6502::B, false);
+        cpu->set_flag(MOS6502::U, false);
+    );
 }
 
-bool MOS6502::PLA() {   // DONE
-    S++;
-    address = STACK_OFFSET + S;
-    mem_read();
-    A = data_bus;
-    set_flag(Z, A == 0x00);
-    set_flag(N, A & 0x80);
-
-    return false;
+void MOS6502::PLA() {   // DONE
+    MICROCODE(
+        cpu->S++;
+        cpu->address = STACK_OFFSET + cpu->S;
+        cpu->mem_read();
+        cpu->A = cpu->data_bus;
+        cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->A & 0x80);
+    );
 }
 
-bool MOS6502::PLP() {   // DONE
-    S++;
-    address = STACK_OFFSET + S;
-    mem_read();
-    P = data_bus;
-    set_flag(B, false);
-    set_flag(U, true);
-    return false;
+void MOS6502::PLP() {   // DONE
+    MICROCODE(
+        cpu->S++;
+        cpu->address = STACK_OFFSET + cpu->S;
+        cpu->mem_read();
+        cpu->P = cpu->data_bus;
+        cpu->set_flag(MOS6502::B, false);
+        cpu->set_flag(MOS6502::U, true);
+    );
 }
 
-bool MOS6502::ROL() {   // DONE
-    mem_read();
-    tmp_buff = (uint16_t)(data_bus << 1) | (read_flag(C) ? 1 : 0);
-    set_flag(C, tmp_buff & 0xFF00);
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(N, tmp_buff & 0x0080);
+void MOS6502::ROL() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff = (uint16_t)(cpu->data_bus << 1) | (cpu->read_flag(MOS6502::C) ? 1 : 0);
+        cpu->set_flag(MOS6502::C, cpu->tmp_buff & 0xFF00);
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
+        cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
+    );
 
-    data_bus = tmp_buff & 0x00FF;
-    mem_write();
-
-    return false;
+    MICROCODE(
+        cpu->data_bus = cpu->tmp_buff & 0x00FF;
+        cpu->mem_write();
+    );
 }
 
-bool MOS6502::ROR() {   // DONE
-    mem_read();
-    tmp_buff = (uint16_t)((read_flag(C) ? 1 : 0) << 7) | (data_bus >> 1);
-    set_flag(C, data_bus & 0x01);
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(N, tmp_buff & 0x0080);
+void MOS6502::ROR() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff = (uint16_t)((cpu->read_flag(MOS6502::C) ? 1 : 0) << 7) | (cpu->data_bus >> 1);
+        cpu->set_flag(MOS6502::C, cpu->data_bus & 0x01);
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
+        cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
+    );
 
-    data_bus = tmp_buff & 0x00FF;
-    mem_write();
-
-    return false;
+    MICROCODE(
+        cpu->data_bus = cpu->tmp_buff & 0x00FF;
+        cpu->mem_write();
+    );
 }
 
-bool MOS6502::RTI() {   // DONE
-    S++;
-    address = STACK_OFFSET + S;
-    mem_read();
-    P = data_bus;
-    P &= ~B;
-    P &= ~U;
+void MOS6502::RTI() {   // DONE
+    MICROCODE(
+        cpu->S++;
+        cpu->address = STACK_OFFSET + cpu->S;
+        cpu->mem_read();
+        cpu->P = cpu->data_bus;
+        cpu->P &= ~MOS6502::B;
+        cpu->P &= ~MOS6502::U;
 
-    S++;
-    address = STACK_OFFSET + S;
-    mem_read();
-    tmp_buff = (uint16_t)data_bus;
-    S++;
-    address = STACK_OFFSET + S;
-    mem_read();
-    tmp_buff |= (uint16_t)data_bus << 8;
+        cpu->S++;
+        cpu->address = STACK_OFFSET + cpu->S;
+    );
 
-    PC = tmp_buff;
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff = (uint16_t)cpu->data_bus;
+        cpu->S++;
+        cpu->address = STACK_OFFSET + cpu->S;
+    );
 
-    return false;
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff |= (uint16_t)cpu->data_bus << 8;
+
+        cpu->PC = cpu->tmp_buff;
+    );
 }
 
-bool MOS6502::RTS() {   // DONE
-    S++;
-    address = STACK_OFFSET + S;
-    mem_read();
-    tmp_buff = (uint16_t)data_bus;
-    S++;
-    address = STACK_OFFSET + S;
-    mem_read();
-    tmp_buff |= (uint16_t)data_bus << 8;
+void MOS6502::RTS() {   // DONE
+    MICROCODE(
+        cpu->S++;
+        cpu->address = STACK_OFFSET + cpu->S;
+        cpu->mem_read();
+        cpu->tmp_buff = (uint16_t)cpu->data_bus;
+        cpu->S++;
+        cpu->address = STACK_OFFSET + cpu->S;
+    );
 
-    PC = tmp_buff;
-    PC++;
+    MICROCODE(
+        cpu->mem_read();
+        cpu->tmp_buff |= (uint16_t)cpu->data_bus << 8;
 
-    return false;
+        cpu->PC = cpu->tmp_buff;
+        cpu->PC++;
+    );
 }
 
-// A = A - M - (1 - C)  ->  A = A + -1 * (M - (1 - C))  ->  A = A + (-M + 1 + C)
-bool MOS6502::SBC() {   // DONE
-    mem_read();
+// cpu->A = cpu->A - M - (1 - MOS6502::C)  ->  cpu->A = cpu->A + -1 * (M - (1 - MOS6502::C))  ->  cpu->A = cpu->A + (-M + 1 + MOS6502::C)
+void MOS6502::SBC() {   // DONE
+    MICROCODE(
+        cpu->mem_read();
 
-    uint16_t tv = (uint16_t)data_bus ^ 0x00FF;
-    tmp_buff = (uint16_t)A + tv + (read_flag(C) ? 0x0001 : 0x0000);
-    set_flag(C, tmp_buff & 0xFF00);
-    set_flag(Z, (tmp_buff & 0x00FF) == 0x0000);
-    set_flag(O, (tmp_buff ^ (uint16_t)A) & (tmp_buff ^ tv) & 0x0080);
-    set_flag(N, tmp_buff & 0x0080);
-    A = tmp_buff & 0x00FF;
-
-    return true;
+        uint16_t tv = (uint16_t)cpu->data_bus ^ 0x00FF;
+        cpu->tmp_buff = (uint16_t)cpu->A + tv + (cpu->read_flag(MOS6502::C) ? 0x0001 : 0x0000);
+        cpu->set_flag(MOS6502::C, cpu->tmp_buff & 0xFF00);
+        cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
+        cpu->set_flag(MOS6502::O, (cpu->tmp_buff ^ (uint16_t)cpu->A) & (cpu->tmp_buff ^ tv) & 0x0080);
+        cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
+        cpu->A = cpu->tmp_buff & 0x00FF;
+    );
 }
 
-bool MOS6502::SEC() {   // DONE
-    set_flag(C, true);
-    return false;
+void MOS6502::SEC() {   // DONE
+    MICROCODE(
+        cpu->set_flag(MOS6502::C, true);
+    );
 }
 
-bool MOS6502::SED() {   // DONE
-    set_flag(D, true);
-    return false;
+void MOS6502::SED() {   // DONE
+    MICROCODE(
+        cpu->set_flag(D, true);
+    );
 }
 
-bool MOS6502::SEI() {   // DON
-    set_flag(I, true);
-    return false;
+void MOS6502::SEI() {   // DON
+    MICROCODE(
+        cpu->set_flag(I, true);
+    );
 }
 
-bool MOS6502::STA() {   // DONE
-    data_bus = A;
-    mem_write();
-
-    return false;
+void MOS6502::STA() {   // DONE
+    MICROCODE(
+        cpu->data_bus = cpu->A;
+        cpu->mem_write();
+    );
 }
 
-bool MOS6502::STX() {   // DONE
-    data_bus = X;
-    mem_write();
-
-    return false;
+void MOS6502::STX() {   // DONE
+    MICROCODE(
+        cpu->data_bus = cpu->X;
+        cpu->mem_write();
+    );
 }
 
-bool MOS6502::STY() {   // DONE
-    data_bus = Y;
-    mem_write();
-
-    return false;
+void MOS6502::STY() {   // DONE
+    MICROCODE(
+        cpu->data_bus = cpu->Y;
+        cpu->mem_write();
+    );
 }
 
-bool MOS6502::TAX() {   // DONE
-    X = A;
-    set_flag(Z, X == 0x00);
-    set_flag(N, X & 0x80);
-
-    return false;
+void MOS6502::TAX() {   // DONE
+    MICROCODE(
+        cpu->X = cpu->A;
+        cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->X & 0x80);
+    );
 }
 
-bool MOS6502::TAY() {   // DONE
-    Y = A;
-    set_flag(Z, Y == 0x00);
-    set_flag(N, Y & 0x80);
-
-    return false;
+void MOS6502::TAY() {   // DONE
+    MICROCODE(
+        cpu->Y = cpu->A;
+        cpu->set_flag(MOS6502::Z, cpu->Y == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->Y & 0x80);
+    );
 }
 
-bool MOS6502::TSX() {   // DONE
-    X = S;
-    set_flag(Z, X == 0x00);
-    set_flag(N, X & 0x80);
-
-    return false;
+void MOS6502::TSX() {   // DONE
+    MICROCODE(
+        cpu->X = cpu->S;
+        cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->X & 0x80);
+    );
 }
 
-bool MOS6502::TXA() {   // DONE
-    A = X;
-    set_flag(Z, A == 0x00);
-    set_flag(N, A & 0x80);
-
-    return false;
+void MOS6502::TXA() {   // DONE
+    MICROCODE(
+        cpu->A = cpu->X;
+        cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->A & 0x80);
+    );
 }
 
-bool MOS6502::TXS() {   // DONE
-    S = X;
-    return false;
+void MOS6502::TXS() {   // DONE
+    MICROCODE(
+        cpu->S = cpu->X;
+    );
 }
 
-bool MOS6502::TYA() {
-    A = Y;
-    set_flag(Z, A == 0x00);
-    set_flag(N, A & 0x80);
-
-    return false;
+void MOS6502::TYA() {
+    MICROCODE(
+        cpu->A = cpu->Y;
+        cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->A & 0x80);
+    );
 }
 
 /********************************************************
  *                  ILLEGAL INST SET                    *
  ********************************************************/
 
-bool MOS6502::LAX() {
-    mem_read();
-    A = data_bus;
-    X = data_bus;
+void MOS6502::LAX() {
+    MICROCODE(
+        cpu->mem_read();
+        cpu->A = cpu->data_bus;
+        cpu->X = cpu->data_bus;
 
-    set_flag(Z, X == 0x00);
-    set_flag(N, X & 0x80);
-
-    return true;
+        cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
+        cpu->set_flag(MOS6502::N, cpu->X & 0x80);
+    );
 }
 
 
-bool MOS6502::SAX() {
-    data_bus = A & X;
-    mem_write();
-
-    return false;
+void MOS6502::SAX() {
+    MICROCODE(
+        cpu->data_bus = cpu->A & cpu->X;
+        cpu->mem_write();
+    );
 }
 
 
-bool MOS6502::DCP() {
+void MOS6502::DCP() {
     DEC();
     CMP();
-
-    return false;
 }
 
 
-bool MOS6502::ISB() {
+void MOS6502::ISB() {
     INC();
     SBC();
-
-    return false;
 }
 
 
-bool MOS6502::SLO() {
+void MOS6502::SLO() {
     ASL();
     ORA();
-
-    return false;
 }
 
 
-bool MOS6502::RLA() {
+void MOS6502::RLA() {
     ROL();
     AND();
-
-    return false;
 }
 
 
-bool MOS6502::SRE() {
+void MOS6502::SRE() {
     LSR();
     EOR();
-
-    return false;
 }
 
 
-bool MOS6502::RRA() {
+void MOS6502::RRA() {
     ROR();
     ADC();
-
-    return false;
 }
 
 
-bool MOS6502::XXX() {
+void MOS6502::XXX() {
     log("Executed illegal opcode");
-    return false;
 }

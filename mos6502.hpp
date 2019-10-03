@@ -60,8 +60,8 @@ class MOS6502 {
         C = (1 << 0)        // C:  CARRY                1 = True
     };
 
-    typedef void (*operation_t)(void);
-    typedef void (*addrmode_t)(void);
+    typedef void (MOS6502::*operation_t)(void);
+    typedef void (MOS6502::*addrmode_t)(void);
     typedef void (*micro_op_t)(MOS6502 *self);
 
     struct instruction_t {  // INSTRUCTION
