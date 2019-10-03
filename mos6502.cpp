@@ -40,7 +40,7 @@ void MOS6502::mem_write() {
 }
 
 
-void MOS6502::clock() {
+bool MOS6502::clock() {
 
     if (microcode_q.is_empty()) {   // Fetch and decode next instruction
         accumulator_addressing = false;
@@ -72,6 +72,14 @@ void MOS6502::clock() {
             log("Error dequeueing nex microcode instruction");
         }
     }
+
+    // TEST
+    if (microcode_q.is_empty()) {
+        return true;
+    }
+
+    return false;
+    // TEST END
 }
 
 

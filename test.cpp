@@ -96,17 +96,23 @@ TEST_CASE("Test") {
 
         if (log_file) {
             iteration++;
+
             // Exec next instruction
-            cpu.clock();
+            while (!cpu.clock()) {};
+
             p_state_t curr_state = cpu.get_status();
 
             // SOME STATE MAGIC TO MAKE MATCH THE LOG FILE
             state = curr_state;
 
             state.P = previous_state.P;
+
             state.S = previous_state.S;
+
             state.A = previous_state.A;
+
             state.X = previous_state.X;
+
             state.Y = previous_state.Y;
 
             previous_state = curr_state;
@@ -115,6 +121,7 @@ TEST_CASE("Test") {
 
             // Compare current instruction
             cmp_res = memcmp(line, state_log, LOG_INST_LEN);
+
             printf("%s\n", state_log);
 
             if (cmp_res != 0) {

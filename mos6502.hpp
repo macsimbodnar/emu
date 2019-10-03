@@ -16,7 +16,7 @@ class MOS6502 {
   public:
     explicit MOS6502(mem_access_callback mem_acc_clb, void *usr_data);
 
-    void clock();                     // Clock signal
+    bool clock();                     // Clock signal
     void reset();                     // Reset signal
     void irq();                       // Interrupt signal
     void nmi();                       // Non-maskable interrupt signal
