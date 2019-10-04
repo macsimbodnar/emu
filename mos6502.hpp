@@ -90,6 +90,7 @@ class MOS6502 {
     uint16_t tmp_buff;                            // Temporary 16-bit buffer
     uint16_t hi;
     uint16_t lo;
+    bool page_boundary_crossed;
 
     // The vector containing the opcode and addressing fuctions and info.
     // The vector is 256 size long and the opcode byte match the correct addressing mode and function

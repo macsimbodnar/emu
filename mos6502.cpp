@@ -425,8 +425,15 @@ void MOS6502::IND() {   // DONE
         cpu->address = cpu->PC++;
         cpu->mem_read();
         cpu->lo = cpu->data_bus;
+    {
+        if (cpu->lo == 0x00FF) {
+            cpu->page_boundary_crossed = true;
+        } else {
+            cpu->page_boundary_crossed = false;
+        }
 
         cpu->address = cpu->PC++;
+    }
     );
 
     MICROCODE(
@@ -443,7 +450,7 @@ void MOS6502::IND() {   // DONE
         cpu->lo = cpu->data_bus;
     {
         /* NOTE(max): this one is here because without artistic style go crazy and format ad mentula canis */
-        if (cpu->lo == 0x00FF) { /* Page boundary hardware bug */
+        if (cpu->page_boundary_crossed) { /* Page boundary hardware bug */
             cpu->address = cpu->tmp_buff & 0xFF00;
         } else {
             cpu->address = cpu->tmp_buff + 1;
@@ -959,13 +966,13 @@ void MOS6502::PHA() {   // DONE
 void MOS6502::PHP() {   // DONE
     MICROCODE(
         cpu->set_flag(MOS6502::B, true);
-        cpu->set_flag(MOS6502::U, true);
+        /* cpu->set_flag(MOS6502::U, true); */
 
         cpu->data_bus = cpu->P;
         cpu->address = STACK_OFFSET + cpu->S--;
         cpu->mem_write();
         cpu->set_flag(MOS6502::B, false);
-        cpu->set_flag(MOS6502::U, false);
+        /* cpu->set_flag(MOS6502::U, false); */
     );
 }
 
@@ -1028,7 +1035,8 @@ void MOS6502::RTI() {   // DONE
         cpu->mem_read();
         cpu->P = cpu->data_bus;
         cpu->P &= ~MOS6502::B;
-        cpu->P &= ~MOS6502::U;
+        /* cpu->P &= ~MOS6502::U; */
+        cpu->set_flag(MOS6502::U, true);
 
         cpu->S++;
         cpu->address = STACK_OFFSET + cpu->S;
