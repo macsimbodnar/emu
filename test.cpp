@@ -15,6 +15,7 @@
 #define LOG_INST_LEN            19
 #define LOG_REG_OFFSET          48
 #define LOG_REG_LEN             25
+#define LOG_CYC_OFFSET          87
 
 #define NES_PRG_BANK_SIZE       16384
 #define NES_CHR_BANK_SIZE       8192
@@ -115,6 +116,8 @@ TEST_CASE("Test") {
 
             state.Y = previous_state.Y;
 
+            state.tot_cycles = previous_state.tot_cycles;
+
             previous_state = curr_state;
 
             build_log_str(state_log, state);
@@ -135,6 +138,14 @@ TEST_CASE("Test") {
 
             if (cmp_res != 0) {
                 printf("REGISTER Missmatch on iteration %d\n%s\n", iteration, line);
+            }
+
+            // Compare registers
+            size_t len = strlen(line);
+            cmp_res = memcmp(line + LOG_CYC_OFFSET, state_log + LOG_CYC_OFFSET, len - LOG_CYC_OFFSET);
+
+            if (cmp_res != 0) {
+                printf("CYCLES COUNT Missmatch on iteration %d\n%s\n", iteration, line);
             }
 
             REQUIRE_EQ(cmp_res, 0);

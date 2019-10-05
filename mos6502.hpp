@@ -91,6 +91,7 @@ class MOS6502 {
     uint16_t hi;
     uint16_t lo;
     bool page_boundary_crossed;
+    uint32_t cycles = 0;
 
     // The vector containing the opcode and addressing fuctions and info.
     // The vector is 256 size long and the opcode byte match the correct addressing mode and function

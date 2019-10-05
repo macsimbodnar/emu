@@ -41,6 +41,7 @@ void MOS6502::mem_write() {
 
 
 bool MOS6502::clock() {
+    cycles++;
 
     if (microcode_q.is_empty()) {   // Fetch and decode next instruction
         accumulator_addressing = false;
@@ -105,6 +106,7 @@ void MOS6502::reset() {
     address = 0x0000;
     data_bus = 0x00;
     accumulator_addressing = false;
+    cycles = 7;
 }
 
 
@@ -121,9 +123,9 @@ void MOS6502::irq() {   // Read from 0xFFFE
         mem_write();    // write low byte
 
         // Push status on stack
-        set_flag(B, 0);
-        set_flag(U, 1);
-        set_flag(I, 1);
+        set_flag(B, false);
+        set_flag(U, true);
+        set_flag(I, true);
 
         data_bus = P;
         address = STACK_OFFSET + S--;
@@ -152,9 +154,9 @@ void MOS6502::nmi() {   // Read from 0xFFFA
     mem_write();    // write low byte
 
     // Push status on stack
-    set_flag(B, 0);
-    set_flag(U, 1);
-    set_flag(I, 1);
+    set_flag(B, false);
+    set_flag(U, true);
+    set_flag(I, true);
 
     data_bus = P;
     address = STACK_OFFSET + S--;
@@ -189,7 +191,7 @@ p_state_t MOS6502::get_status() {
             PC_executed,
             arg1,
             arg2,
-            0};
+            cycles};
 }
 
 

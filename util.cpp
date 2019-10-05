@@ -47,6 +47,4 @@ void build_log_str(char *out, const p_state_t &s) {
         sprintf(out, "ERROR, unexpected opcode_size %d", s.opcode_size);
         break;
     }
-
-
 }
