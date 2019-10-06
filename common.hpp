@@ -11,11 +11,10 @@ enum class access_mode_t {  // Access mode type
 
 
 // Callback used by the MOS6502 Class to read / write memory
-typedef void (*mem_access_callback)(void *usr_data,         // User data will be passed here
-                                    const uint16_t address, // Address of memory to access in range from 0x0000 to 0xFFFF
-                                    const access_mode_t
-                                    read_write,     // Memory access mode. If READ data stored at 'address' will be copied in 'data', if WRITE 'data' will be copied at 'address'
-                                    uint8_t &data);         // Data used to store/read. If 'read_write' is READ 'data' is output parameter, if WRITE 'data' is input parameter
+typedef void (*mem_access_callback)(void *usr_data,                 // User data will be passed here
+                                    const uint16_t address,         // Address of memory to access in range from 0x0000 to 0xFFFF
+                                    const access_mode_t read_write, // Memory access mode. If READ data stored at 'address' will be copied in 'data', if WRITE 'data' will be copied at 'address'
+                                    uint8_t &data);                 // Data used to store/read. If 'read_write' is READ 'data' is output parameter, if WRITE 'data' is input parameter
 
 
 // Data structure returned by get_status() and contain the current status of the MOS6502

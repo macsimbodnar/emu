@@ -310,17 +310,16 @@ void MOS6502::IMP() {   // DONE
 }
 
 void MOS6502::REL() {   // DONE
+// *INDENT-OFF*
     MICROCODE(
         cpu->address = cpu->PC++;
         cpu->mem_read();
         cpu->relative_adderess = cpu->data_bus & 0x00FF;
-    {
-        /* NOTE(max): this one is here because without artistic style go crazy and format ad mentula canis */
         if (cpu->relative_adderess & 0x80) {   /* if relative_adderess >= 128 */
             cpu->relative_adderess |= 0xFF00;  /* the this is negative offset */
         }
-    }
     );
+// *INDENT-ON*
 }
 
 void MOS6502::IIX() {   // DONE
@@ -423,11 +422,12 @@ void MOS6502::IND() {   // DONE
     // mem_read();
     // address = (((uint16_t)data_bus) << 8) | tmp_buff;
 
+// *INDENT-OFF*
     MICROCODE(
         cpu->address = cpu->PC++;
         cpu->mem_read();
         cpu->lo = cpu->data_bus;
-    {
+
         if (cpu->lo == 0x00FF) {
             cpu->page_boundary_crossed = true;
         } else {
@@ -435,8 +435,8 @@ void MOS6502::IND() {   // DONE
         }
 
         cpu->address = cpu->PC++;
-    }
     );
+// *INDENT-ON*
 
     MICROCODE(
         cpu->mem_read();
@@ -447,18 +447,18 @@ void MOS6502::IND() {   // DONE
         cpu->address = cpu->tmp_buff;
     );
 
+// *INDENT-OFF*
     MICROCODE(
         cpu->mem_read();
         cpu->lo = cpu->data_bus;
-    {
-        /* NOTE(max): this one is here because without artistic style go crazy and format ad mentula canis */
+
         if (cpu->page_boundary_crossed) { /* Page boundary hardware bug */
             cpu->address = cpu->tmp_buff & 0xFF00;
         } else {
             cpu->address = cpu->tmp_buff + 1;
         }
-    }
     );
+// *INDENT-ON*
 
     MICROCODE(
         cpu->mem_read();
@@ -518,51 +518,42 @@ void MOS6502::ASL() {   // DONE
 }
 
 void MOS6502::BCC() {   // DONE
+// *INDENT-OFF*
     MICROCODE(
-
-    {
         if (cpu->read_flag(C) == false) {
             /* cycles++; */
-
             cpu->address = cpu->PC + cpu->relative_adderess;
-
             /*
             if ((address & 0xFF00) != (PC & 0xFF00)) {
                  cycles++;
             }
             */
-
             cpu->PC = cpu->address;
         }
-    }
     );
+// *INDENT-ON*
 }
 
 void MOS6502::BCS() {   // DONE
+// *INDENT-OFF*
     MICROCODE(
-
-    {
         if (cpu->read_flag(C)) {
             /* cycles++; */
-
             cpu->address = cpu->PC + cpu->relative_adderess;
-
             /*
             if ((address & 0xFF00) != (PC & 0xFF00)) {
                 cycles++;
             }
             */
-
             cpu->PC = cpu->address;
         }
-    }
     );
+// *INDENT-ON*
 }
 
 void MOS6502::BEQ() {   // DONE
+// *INDENT-OFF*
     MICROCODE(
-
-    {
         if (cpu->read_flag(Z)) {
             /* cycles++; */
 
@@ -575,8 +566,8 @@ void MOS6502::BEQ() {   // DONE
 
             cpu->PC = cpu->address;
         }
-    }
     );
+// *INDENT-ON*
 }
 
 void MOS6502::BIT() {   // DONE
@@ -591,9 +582,8 @@ void MOS6502::BIT() {   // DONE
 }
 
 void MOS6502::BMI() {   // DONE
+// *INDENT-OFF*
     MICROCODE(
-
-    {
         if (cpu->read_flag(MOS6502::N)) {
             /* cycles++; */
 
@@ -606,14 +596,13 @@ void MOS6502::BMI() {   // DONE
 
             cpu->PC = cpu->address;
         }
-    }
     );
+// *INDENT-ON*
 }
 
 void MOS6502::BNE() {   // DONE
+// *INDENT-OFF*
     MICROCODE(
-
-    {
         if (cpu->read_flag(MOS6502::Z) == false) {
             /* cycles++; */
 
@@ -626,14 +615,13 @@ void MOS6502::BNE() {   // DONE
 
             cpu->PC = cpu->address;
         }
-    }
     );
+// *INDENT-ON*
 }
 
 void MOS6502::BPL() {   // DONE
+// *INDENT-OFF*
     MICROCODE(
-
-    {
         if (cpu->read_flag(MOS6502::N) == false) {
             /* cycles++; */
 
@@ -646,8 +634,8 @@ void MOS6502::BPL() {   // DONE
 
             cpu->PC = cpu->address;
         }
-    }
     );
+// *INDENT-ON*
 }
 
 void MOS6502::BRK() {   // DONE
@@ -692,9 +680,8 @@ void MOS6502::BRK() {   // DONE
 }
 
 void MOS6502::BVC() {   // DONE
+// *INDENT-OFF*
     MICROCODE(
-
-    {
         if (cpu->read_flag(MOS6502::O) == false) {
             /* cycles++; */
 
@@ -707,14 +694,13 @@ void MOS6502::BVC() {   // DONE
 
             cpu->PC = cpu->address;
         }
-    }
     );
+// *INDENT-ON*
 }
 
 void MOS6502::BVS() {   // DONE
+// *INDENT-OFF*
     MICROCODE(
-
-    {
         if (cpu->read_flag(MOS6502::O)) {
             /* cycles++; */
 
@@ -727,8 +713,8 @@ void MOS6502::BVS() {   // DONE
 
             cpu->PC = cpu->address;
         }
-    }
     );
+// *INDENT-ON*
 }
 
 void MOS6502::CLC() {   // DONE

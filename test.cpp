@@ -65,7 +65,7 @@ static void mem_callback(void *usr_data,
 static bool load_NES_cartridge(const char *file, NES_cartridge_t &cartridge_out);
 
 
-TEST_CASE("Test") {
+TEST_CASE("NES Test") {
     char state_log[150];
     p_state_t state;
     p_state_t previous_state;
@@ -154,6 +154,40 @@ TEST_CASE("Test") {
     }
 
     log_file.close();
+}
+
+
+TEST_CASE("Cycles Timing Test") {
+    uint8_t mem[64 * 1024];
+    // Initialize the cpu and set the log callback
+    MOS6502 cpu(
+    [](void *usr_data, const uint16_t address, const access_mode_t read_write, uint8_t &data) -> void {
+        uint8_t *mem = (uint8_t *) usr_data;
+
+        switch (read_write) {
+        case access_mode_t::READ:
+            data = mem[address];
+            break;
+
+        case access_mode_t::WRITE:
+            mem[address] = data;
+            break;
+
+        default:
+            log_clb("Unexpected mem access type");
+            break;
+        }
+    },
+    (void *)mem);
+
+    cpu.set_log_callback(log_clb);
+
+    // Reset the cpu before use and set the Program Counter to specific mem addres in order to perfrom all tests
+    cpu.reset();
+
+    // The code starts from 0x0300
+    mem[0xFFFC] = 0x00; // Set the reset Vector ll
+    mem[0xFFFD] = 0x03; // Set the reset Vector hh
 }
 
 

@@ -16,15 +16,15 @@ class MOS6502 {
   public:
     explicit MOS6502(mem_access_callback mem_acc_clb, void *usr_data);
 
-    bool clock();                     // Clock signal
-    void reset();                     // Reset signal
-    void irq();                       // Interrupt signal
-    void nmi();                       // Non-maskable interrupt signal
+    bool clock();                           // Clock signal
+    void reset();                           // Reset signal
+    void irq();                             // Interrupt signal
+    void nmi();                             // Non-maskable interrupt signal
 
-    void set_PC(uint16_t address);    // Set the PC to specific memory address. NOTE(max): debug/test
+    void set_PC(uint16_t address);          // Set the PC to specific memory address. NOTE(max): debug/test
 
-    p_state_t get_status();               // Return the struct containing the current processor status. NOTE(max): debug/test
-    void set_log_callback(log_callback);  // Set the callback used for log. Not mandatory
+    p_state_t get_status();                 // Return the struct containing the current processor status. NOTE(max): debug/test
+    void set_log_callback(log_callback);    // Set the callback used for log. Not mandatory
 
   public:
     /********************************************************
@@ -49,22 +49,22 @@ class MOS6502 {
     /********************************************************
      *                    DATA STRUCTURES                   *
      ********************************************************/
-    enum status_flag_t {    // Processor Status Register BITMASKs
-        N = (1 << 7),       // N:  NEGATIVE             1 = Neg
-        O = (1 << 6),       // O:  OVERFLOW             1 = True
-        U = (1 << 5),       // -   UNUSED stay on 1
-        B = (1 << 4),       // B:  BRK COMMAND
-        D = (1 << 3),       // D:  DECIMAL MODE         1 = True
-        I = (1 << 2),       // I:  IRQ DISABLE          1 = Disable
-        Z = (1 << 1),       // Z:  ZERO:                1 = Result Zero
-        C = (1 << 0)        // C:  CARRY                1 = True
+    enum status_flag_t {                    // Processor Status Register BITMASKs
+        N = (1 << 7),                       // N:  NEGATIVE             1 = Neg
+        O = (1 << 6),                       // O:  OVERFLOW             1 = True
+        U = (1 << 5),                       // -   UNUSED stay on 1
+        B = (1 << 4),                       // B:  BRK COMMAND
+        D = (1 << 3),                       // D:  DECIMAL MODE         1 = True
+        I = (1 << 2),                       // I:  IRQ DISABLE          1 = Disable
+        Z = (1 << 1),                       // Z:  ZERO:                1 = Result Zero
+        C = (1 << 0)                        // C:  CARRY                1 = True
     };
 
     typedef void (MOS6502::*operation_t)(void);
     typedef void (MOS6502::*addrmode_t)(void);
     typedef void (*micro_op_t)(MOS6502 *self);
 
-    struct instruction_t {  // INSTRUCTION
+    struct instruction_t {                  // INSTRUCTION
         const std::string name;
         const operation_t operation;
         const addrmode_t addrmode;
