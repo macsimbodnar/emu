@@ -1,7 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest.h>
 
-#include <fstream>
+#include <stdio.h>
 
 #include "mos6502.hpp"
 #include "common.hpp"
@@ -20,6 +20,9 @@
 #define NES_PRG_BANK_SIZE       16384
 #define NES_CHR_BANK_SIZE       8192
 #define NES_RAM                 2048
+
+#define TIMING_TEST_BIN         "resources/6502timing/timingtest.bin"
+#define TIMINT_TEST_MEM_LOC     0x1000
 
 // iNES Format Header
 struct ines_header_t {
@@ -185,9 +188,29 @@ TEST_CASE("Cycles Timing Test") {
     // Reset the cpu before use and set the Program Counter to specific mem addres in order to perfrom all tests
     cpu.reset();
 
-    // The code starts from 0x0300
-    mem[0xFFFC] = 0x00; // Set the reset Vector ll
-    mem[0xFFFD] = 0x03; // Set the reset Vector hh
+    // The code starts from 0x1000
+    mem[0xFFFC] = (uint8_t) TIMINT_TEST_MEM_LOC & 0x00FF;                       // Set the reset Vector ll
+    mem[0xFFFD] = (uint8_t)(TIMINT_TEST_MEM_LOC >> 8) & 0x00FF;                 // Set the reset Vector hh
+
+    // NOTE(max):   Using the srec from this discussion http://forum.6502.org/viewtopic.php?f=8&t=3340
+    //              Loaded at address $1000
+
+    // Read the file
+    FILE *file = fopen(TIMING_TEST_BIN, "rb");
+    REQUIRE_NE(file, nullptr);
+
+    // get the file size
+    fseek(file, 0, SEEK_END);
+    size_t size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Load the code in mem
+    size_t read = fread(mem + TIMINT_TEST_MEM_LOC, sizeof(uint8_t), size, file);
+    REQUIRE_EQ(read, size);
+
+    fclose(file);
+
+    // TODO(max): Write the tests
 }
 
 
