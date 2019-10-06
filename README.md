@@ -104,11 +104,6 @@ The **EMU** is case insensitive for now
 
 
 
-# Credits
-* To [Javidx9](http://www.onelonecoder.com/index.html) for the inspiration
-
-
-
 # Libs
 * **[doctest](https://github.com/onqtam/doctest)**: It's one header C++ fast test framework 
 
