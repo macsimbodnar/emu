@@ -211,6 +211,7 @@ TEST_CASE("Cycles Timing Test") {
     fclose(file);
 
     // TODO(max): Write the tests
+    // On visual6502 it takes 1141 cycles
 }
 
 
