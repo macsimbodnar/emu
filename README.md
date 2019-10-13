@@ -160,7 +160,9 @@ The **EMU** is case insensitive for now
 
 * [Rockwell Datasheet](http://archive.6502.org/datasheets/rockwell_r650x_r651x.pdf) with opcode matrix
 
-* [Document](http://www.zimmers.net/anonftp/pub/cbm/documents/chipdata/64doc) used for timing in the cycle-precise version. It is about 6510 but the instructions set should be the same as the 6502
+* [Document](http://www.zimmers.net/anonftp/pub/cbm/documents/chipdata/64doc) used for **timing** in the cycle-precise version. It is about 6510 but the instructions set should be the same as the 6502
+
+* Nice [Instruction timing](http://nparker.llx.com/a2/opcodes.html#chart) description and more info
 
 ## License
 

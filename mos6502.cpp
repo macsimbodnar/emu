@@ -46,6 +46,7 @@ bool MOS6502::clock() {
 
     if (microcode_q.is_empty()) {   // Fetch and decode next instruction
         accumulator_addressing = false;
+        skip_mem_read = false;
         address_bus = PC++;
         mem_read();
         opcode = data_bus;
@@ -298,46 +299,84 @@ void MOS6502::ZPY() {
     );
 }
 
-void MOS6502::ABX() {   // DONE
+void MOS6502::ABX() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Fetch low byte of address, increment PC
     MICROCODE(
         cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->tmp_buff = cpu->data_bus & 0x00FF;
-        cpu->address_bus = cpu->PC++;
+        cpu->lo = cpu->data_bus;
     );
 
+    // TICK(3): Fetch high byte of address, add index register to low address byte, increment PC
     MICROCODE(
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->address_bus = ((((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff) + cpu->X;
+        cpu->hi = cpu->data_bus;
+        cpu->tmp_buff = cpu->lo + cpu->X;
+
+        /*                                  NOTE(max):
+         *    Check page crossing: if no page boundary was crossed then the address is correct
+         *    and the re-read can be skiped in the Absolute indexed addressing Read instructions
+         *    (LDA, LDX, LDY, EOR, AND, ORA, ADC, SBC, CMP, BIT, LAX, LAE, SHS, NOP)
+         */
+        cpu->skip_mem_read = !(cpu->tmp_buff & 0xFF00); // If no page cross then skip
+        cpu->lo = cpu->tmp_buff & 0x00FF;
     );
 
-    // if ((address & 0xFF00) != (((uint16_t)data_bus) << 8)) {
-    //     // TODO() fix this with reasonable code
-    //     MICROCODE(
-    //         asm("nop");
-    //     );
-    // }
+// *INDENT-OFF*
+    // TICK(4): Read from effective address, fix the high byte of effective address
+    MICROCODE(
+        cpu->address_bus = ADDRESS(cpu->hi, cpu->lo);
+        cpu->mem_read();
+
+        // Fix hi byte of address
+        if (!cpu->skip_mem_read) {   // If no page skip then need to fix the page cross
+            cpu->address_bus = ADDRESS(cpu->hi + 1, cpu->lo);
+        }
+    );
+// *INDENT-ON*
 }
 
-void MOS6502::ABY() {   // DONE
+void MOS6502::ABY() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Fetch low byte of address, increment PC
     MICROCODE(
         cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->tmp_buff = cpu->data_bus & 0x00FF;
-        cpu->address_bus = cpu->PC++;
+        cpu->lo = cpu->data_bus;
     );
 
+    // TICK(3): Fetch high byte of address, add index register to low address byte, increment PC
     MICROCODE(
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->address_bus = ((((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff) + cpu->Y;
+        cpu->hi = cpu->data_bus;
+        cpu->tmp_buff = cpu->lo + cpu->Y;
+
+        /*                                  NOTE(max):
+         *    Check page crossing: if no page boundary was crossed then the address is correct
+         *    and the re-read can be skiped in the Absolute indexed addressing Read instructions
+         *    (LDA, LDX, LDY, EOR, AND, ORA, ADC, SBC, CMP, BIT, LAX, LAE, SHS, NOP)
+         */
+        cpu->skip_mem_read = !(cpu->tmp_buff & 0xFF00); // If no page cross then skip
+        cpu->lo = cpu->tmp_buff & 0x00FF;
     );
 
-    // if ((address & 0xFF00) != (((uint16_t)data_bus) << 8)) {
-    //     // TODO() fix this with reasonable code
-    //     MICROCODE(
-    //         asm("nop");
-    //     );
-    // }
+// *INDENT-OFF*
+    // TICK(4): Read from effective address, fix the high byte of effective address
+    MICROCODE(
+        cpu->address_bus = ADDRESS(cpu->hi, cpu->lo);
+        cpu->mem_read();
+
+        // Fix hi byte of address
+        if (!cpu->skip_mem_read) {   // If no page skip then need to fix the page cross
+            cpu->address_bus = ADDRESS(cpu->hi + 1, cpu->lo);
+        }
+    );
+// *INDENT-ON*
 }
 
 void MOS6502::IMP() {   // DONE
@@ -452,9 +491,12 @@ void MOS6502::IND() {
  *                   INSTRUCTION SET                    *
  ********************************************************/
 void MOS6502::ADC() {
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
-        cpu->mem_read();
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
 
         /* add is done in 16bit mode to catch the carry bit */
         cpu->tmp_buff = (uint16_t)cpu->A + (uint16_t)cpu->data_bus + (cpu->read_flag(
@@ -469,17 +511,22 @@ void MOS6502::ADC() {
 
         cpu->A = cpu->tmp_buff & 0x00FF;
     );
+// *INDENT-ON*
 }
 
 void MOS6502::AND() {
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
-        cpu->mem_read();
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
         cpu->A = cpu->A & cpu->data_bus;
 
         cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
         cpu->set_flag(MOS6502::N, cpu->A & 0x80);
     );
+// *INDENT-ON*
 }
 
 void MOS6502::ASL() {
@@ -560,15 +607,19 @@ void MOS6502::BEQ() {   // DONE
 }
 
 void MOS6502::BIT() {
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
-        cpu->mem_read();
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
         cpu->tmp_buff = cpu->A & cpu->data_bus;
 
         cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x00);
         cpu->set_flag(MOS6502::N, cpu->data_bus & (1 << 7));
         cpu->set_flag(MOS6502::O, cpu->data_bus & (1 << 6));
     );
+// *INDENT-ON*
 }
 
 void MOS6502::BMI() {   // DONE
@@ -744,14 +795,18 @@ void MOS6502::CLV() {   // DONE
 }
 
 void MOS6502::CMP() {
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
-        cpu->mem_read();
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
         cpu->tmp_buff = (uint16_t)cpu->A - (uint16_t)cpu->data_bus;
         cpu->set_flag(MOS6502::C, cpu->A >= cpu->data_bus);
         cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
         cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
     );
+// *INDENT-ON*
 }
 
 void MOS6502::CPX() {   // DONE
@@ -813,13 +868,17 @@ void MOS6502::DEY() {   // DONE
 }
 
 void MOS6502::EOR() {
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
-        cpu->mem_read();
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
         cpu->A = cpu->data_bus ^ cpu->A;
         cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
         cpu->set_flag(MOS6502::N, cpu->A & 0x80);
     );
+// *INDENT-ON*
 }
 
 void MOS6502::INC() {
@@ -962,36 +1021,48 @@ void MOS6502::JSR() {
 }
 
 void MOS6502::LDA() {
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
-        cpu->mem_read();
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
         cpu->A = cpu->data_bus;
 
         cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
         cpu->set_flag(MOS6502::N, cpu->A & 0x80);
     );
+// *INDENT-ON*
 }
 
 void MOS6502::LDX() {
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
-        cpu->mem_read();
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
         cpu->X = cpu->data_bus;
 
         cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
         cpu->set_flag(MOS6502::N, cpu->X & 0x80);
     );
+// *INDENT-ON*
 }
 
 void MOS6502::LDY() {
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
-        cpu->mem_read();
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
         cpu->Y = cpu->data_bus;
 
         cpu->set_flag(MOS6502::Z, cpu->Y == 0x00);
         cpu->set_flag(MOS6502::N, cpu->Y & 0x80);
     );
+// *INDENT-ON*
 }
 
 void MOS6502::LSR() {
@@ -1020,20 +1091,30 @@ void MOS6502::LSR() {
 
 void MOS6502::NOP() {
     // TODO(max): fix the nop
+
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
         asm("nop");
     );
+// *INDENT-ON*
 }
 
 void MOS6502::ORA() {
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
-        cpu->mem_read();
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
         cpu->A = cpu->A | cpu->data_bus;
         cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
         cpu->set_flag(MOS6502::N, cpu->A & 0x80);
     );
+// *INDENT-ON*
 }
 
 void MOS6502::PHA() {
@@ -1204,9 +1285,12 @@ void MOS6502::RTS() {
 
 // cpu->A = cpu->A - M - (1 - MOS6502::C)  ->  cpu->A = cpu->A + -1 * (M - (1 - MOS6502::C))  ->  cpu->A = cpu->A + (-M + 1 + MOS6502::C)
 void MOS6502::SBC() {
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
-        cpu->mem_read();
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
 
         uint16_t tv = (uint16_t)cpu->data_bus ^ 0x00FF;
         cpu->tmp_buff = (uint16_t)cpu->A + tv + (cpu->read_flag(MOS6502::C) ? 0x0001 : 0x0000);
@@ -1216,6 +1300,7 @@ void MOS6502::SBC() {
         cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
         cpu->A = cpu->tmp_buff & 0x00FF;
     );
+// *INDENT-ON*
 }
 
 void MOS6502::SEC() {   // DONE
@@ -1311,15 +1396,19 @@ void MOS6502::TYA() {
  ********************************************************/
 
 void MOS6502::LAX() {
+// *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
-        cpu->mem_read();
+        if (cpu->skip_mem_read == false) {
+            cpu->mem_read();
+        }
         cpu->A = cpu->data_bus;
         cpu->X = cpu->data_bus;
 
         cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
         cpu->set_flag(MOS6502::N, cpu->X & 0x80);
     );
+// *INDENT-ON*
 }
 
 

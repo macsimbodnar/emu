@@ -83,7 +83,7 @@ class MOS6502 {
 
     uint8_t opcode;                               // Current opcode
     uint8_t data_bus;                             // Data currently on the bus
-    uint16_t address_bus = INITIAL_ADDRESS;           // Current abbsolute address
+    uint16_t address_bus = INITIAL_ADDRESS;       // Current abbsolute address
     uint16_t relative_adderess;                   // Current abbsolute address
 
     bool accumulator_addressing = false;          // Is True when the current instruction is used with
@@ -92,7 +92,8 @@ class MOS6502 {
     uint16_t tmp_buff;                            // Temporary 16-bit buffer
     uint16_t hi;
     uint16_t lo;
-    bool page_boundary_crossed;
+    bool skip_mem_read = false;                   // Read instructions in Absolute indexed addressing mode can skip
+    //                                               the second read if no page_crossing happened   
     uint32_t cycles = 0;
 
     // The vector containing the opcode and addressing fuctions and info.
