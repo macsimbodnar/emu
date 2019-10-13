@@ -253,7 +253,10 @@ void MOS6502::ABS() {
     );
 }
 
-void MOS6502::ZPI() {   // DONE
+void MOS6502::ZPI() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Fetch address, increment PC
     MICROCODE(
         cpu->address_bus = cpu->PC++;
         cpu->mem_read();
@@ -330,6 +333,7 @@ void MOS6502::IMP() {   // DONE
 }
 
 void MOS6502::REL() {   // DONE
+    // NOTE(max): This addressing mode is specific for Branching
 // *INDENT-OFF*
     MICROCODE(
         cpu->address_bus = cpu->PC++;
