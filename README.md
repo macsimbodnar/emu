@@ -88,9 +88,11 @@ The **EMU** is case insensitive for now
 ### Now
 
 * Replace tmp_buff uint16_t with tmp_h and tmp_l uint8_t
+* Rewrite all casts from C style to static_cast C++ like
 * Fix the Immediate addressing
 * Test BRK instruction
 * Test the Queue Class
+* Check the timing of the composed illegal opcodes
 * Implement decimal mode
 * Make processor cycle precise (each clock tick should change the inner status of the processor like in this [simulator](http://www.visual6502.org/JSSim/index.html))
 * Check if the opcode table is correct in terms of cycles
@@ -122,7 +124,7 @@ The **EMU** is case insensitive for now
 
 * Gianluca Ghettini [website](https://www.gianlucaghettini.net/mos-6502-cpu-emulator-in-c/) for some information
 
-* [visual6502.org](visual6502.org/) for documentation, technical and general purpose information. Also the **FANTASTIC** [simulator](http://www.visual6502.org/JSSim/index.html) for general debug and behaviour comparison. This is the BEST place if you need information about mos6502
+* [visual6502.org](visual6502.org/) for documentation, technical and general purpose information. Also the **FANTASTIC** [simulator](http://www.visual6502.org/JSSim/index.html) for general debug and behavior comparison. This is the BEST place if you need information about mos6502
 
 * Obviously [wikipedia](https://en.wikipedia.org/wiki/MOS_Technology_6502)
 

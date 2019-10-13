@@ -1,7 +1,8 @@
 #include "mos6502.hpp"
 
 #define MICROCODE(code) microcode_q.enqueue(([](MOS6502 * cpu) -> void { code }))
-
+#define ADDRESS(hi, lo) (static_cast<uint16_t>((static_cast<uint16_t>(hi) << 8) | lo))
+// #define ADDRESS(hi, lo) (static_cast<uint16_t>(256U * hi + lo))
 
 MOS6502::MOS6502(mem_access_callback mem_acc_clb, void *usr_data) :
     mem_access(mem_acc_clb), user_data(usr_data) {}
@@ -237,17 +238,18 @@ void MOS6502::IMM() {   // DONE
 void MOS6502::ABS() {
     // TICK(1): Fetch opcode, increment PC
 
-    // TICK(2): TODO
+    // TICK(2): Fetch low byte of address, increment PC
     MICROCODE(
         cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->tmp_buff = cpu->data_bus & 0x00FF;
+        cpu->lo = cpu->data_bus;
         cpu->address_bus = cpu->PC++;
     );
 
+    // TICK(3): Fetch high byte of address, increment PC
     MICROCODE(
         cpu->mem_read();
-        cpu->address_bus = (((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff;
+        cpu->address_bus = ADDRESS(cpu->data_bus, cpu->lo);
     );
 }
 
@@ -427,7 +429,8 @@ void MOS6502::IND() {
 /********************************************************
  *                   INSTRUCTION SET                    *
  ********************************************************/
-void MOS6502::ADC() {   // DONE
+void MOS6502::ADC() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
 
@@ -446,7 +449,8 @@ void MOS6502::ADC() {   // DONE
     );
 }
 
-void MOS6502::AND() {   // DONE
+void MOS6502::AND() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
         cpu->A = cpu->A & cpu->data_bus;
@@ -456,9 +460,16 @@ void MOS6502::AND() {   // DONE
     );
 }
 
-void MOS6502::ASL() {   // DONE
+void MOS6502::ASL() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
+    );
+
+    // TICK(A + 2): Write the value back to effective address, and do the operation on it
+    MICROCODE(
+        cpu->mem_write();
+
         cpu->tmp_buff = ((uint16_t)cpu->data_bus) << 1;
 
         cpu->set_flag(MOS6502::C, (cpu->tmp_buff & 0xFF00) > 0);
@@ -466,6 +477,7 @@ void MOS6502::ASL() {   // DONE
         cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
     );
 
+    // TICK(A + 3): Write the new value to effective address
     MICROCODE(
         cpu->data_bus = cpu->tmp_buff & 0x00FF;
         cpu->mem_write();
@@ -525,7 +537,8 @@ void MOS6502::BEQ() {   // DONE
 // *INDENT-ON*
 }
 
-void MOS6502::BIT() {   // DONE
+void MOS6502::BIT() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
         cpu->tmp_buff = cpu->A & cpu->data_bus;
@@ -708,7 +721,8 @@ void MOS6502::CLV() {   // DONE
     );
 }
 
-void MOS6502::CMP() {   // DONE
+void MOS6502::CMP() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
         cpu->tmp_buff = (uint16_t)cpu->A - (uint16_t)cpu->data_bus;
@@ -738,17 +752,25 @@ void MOS6502::CPY() {   // DONE
     );
 }
 
-void MOS6502::DEC() {   // DONE
+void MOS6502::DEC() {
+
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
-        cpu->tmp_buff = cpu->data_bus - 1;
-        cpu->data_bus = cpu->tmp_buff & 0x00FF;
     );
 
+    // TICK(A + 2): Write the value back to effective address, and do the operation on it
     MICROCODE(
         cpu->mem_write();
+        cpu->tmp_buff = cpu->data_bus - 1;
         cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
         cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
+    );
+
+    // TICK(A + 3): Write the new value to effective address
+    MICROCODE(
+        cpu->data_bus = cpu->tmp_buff & 0x00FF;
+        cpu->mem_write();
     );
 }
 
@@ -768,7 +790,8 @@ void MOS6502::DEY() {   // DONE
     );
 }
 
-void MOS6502::EOR() {   // DONE
+void MOS6502::EOR() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
         cpu->A = cpu->data_bus ^ cpu->A;
@@ -777,18 +800,25 @@ void MOS6502::EOR() {   // DONE
     );
 }
 
-void MOS6502::INC() {   // DONE
+void MOS6502::INC() {
+
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
-        cpu->tmp_buff = cpu->data_bus + 1;
-        cpu->data_bus = cpu->tmp_buff & 0x00FF;
     );
 
+    // TICK(A + 2): Write the value back to effective address, and do the operation on it
     MICROCODE(
         cpu->mem_write();
+        cpu->tmp_buff = cpu->data_bus + 1;
         cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
         cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
+    );
 
+    // TICK(A + 3): Write the new value to effective address
+    MICROCODE(
+        cpu->data_bus = cpu->tmp_buff & 0x00FF;
+        cpu->mem_write();
     );
 }
 
@@ -909,7 +939,8 @@ void MOS6502::JSR() {
     );
 }
 
-void MOS6502::LDA() {   // DONE
+void MOS6502::LDA() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
         cpu->A = cpu->data_bus;
@@ -919,7 +950,8 @@ void MOS6502::LDA() {   // DONE
     );
 }
 
-void MOS6502::LDX() {   // DONE
+void MOS6502::LDX() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
         cpu->X = cpu->data_bus;
@@ -929,7 +961,8 @@ void MOS6502::LDX() {   // DONE
     );
 }
 
-void MOS6502::LDY() {   // DONE
+void MOS6502::LDY() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
         cpu->Y = cpu->data_bus;
@@ -939,43 +972,40 @@ void MOS6502::LDY() {   // DONE
     );
 }
 
-void MOS6502::LSR() {   // DONE
+void MOS6502::LSR() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
+    );
 
+    // TICK(A + 2): Write the value back to effective address, and do the operation on it
+    MICROCODE(
+        cpu->mem_write();
         cpu->set_flag(MOS6502::C, cpu->data_bus & 0x01);
 
         cpu->tmp_buff = cpu->data_bus >> 1;
 
         cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
-        /* cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080); */
         cpu->set_flag(MOS6502::N, false);
     );
 
+    // TICK(A + 3): Write the new value to effective address
     MICROCODE(
         cpu->data_bus = cpu->tmp_buff & 0x00FF;
         cpu->mem_write();
     );
 }
 
-void MOS6502::NOP() {   // DONE
-    // TODO(max): handle different nops
-    // switch (opcode) {
-    // case 0x1C:
-    // case 0x3C:
-    // case 0x5C:
-    // case 0x7C:
-    // case 0xDC:
-    // case 0xFC:
-
-    //     break;
-    // }
+void MOS6502::NOP() {
+    // TODO(max): fix the nop
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         asm("nop");
     );
 }
 
-void MOS6502::ORA() {   // DONE
+void MOS6502::ORA() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
         cpu->A = cpu->A | cpu->data_bus;
@@ -1040,30 +1070,46 @@ void MOS6502::PLP() {
     );
 }
 
-void MOS6502::ROL() {   // DONE
+void MOS6502::ROL() {
+
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
+    );
+
+    // TICK(A + 2): Write the value back to effective address, and do the operation on it
+    MICROCODE(
+        cpu->mem_write();
         cpu->tmp_buff = (uint16_t)(cpu->data_bus << 1) | (cpu->read_flag(MOS6502::C) ? 1 : 0);
         cpu->set_flag(MOS6502::C, cpu->tmp_buff & 0xFF00);
         cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
         cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
     );
 
+    // TICK(A + 3): Write the new value to effective address
     MICROCODE(
         cpu->data_bus = cpu->tmp_buff & 0x00FF;
         cpu->mem_write();
     );
 }
 
-void MOS6502::ROR() {   // DONE
+void MOS6502::ROR() {
+
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
+    );
+
+    // TICK(A + 2): Write the value back to effective address, and do the operation on it
+    MICROCODE(
+        cpu->mem_write();
         cpu->tmp_buff = (uint16_t)((cpu->read_flag(MOS6502::C) ? 1 : 0) << 7) | (cpu->data_bus >> 1);
         cpu->set_flag(MOS6502::C, cpu->data_bus & 0x01);
         cpu->set_flag(MOS6502::Z, (cpu->tmp_buff & 0x00FF) == 0x0000);
         cpu->set_flag(MOS6502::N, cpu->tmp_buff & 0x0080);
     );
 
+    // TICK(A + 3): Write the new value to effective address
     MICROCODE(
         cpu->data_bus = cpu->tmp_buff & 0x00FF;
         cpu->mem_write();
@@ -1135,7 +1181,8 @@ void MOS6502::RTS() {
 }
 
 // cpu->A = cpu->A - M - (1 - MOS6502::C)  ->  cpu->A = cpu->A + -1 * (M - (1 - MOS6502::C))  ->  cpu->A = cpu->A + (-M + 1 + MOS6502::C)
-void MOS6502::SBC() {   // DONE
+void MOS6502::SBC() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
 
@@ -1167,21 +1214,24 @@ void MOS6502::SEI() {   // DON
     );
 }
 
-void MOS6502::STA() {   // DONE
+void MOS6502::STA() {
+    // TICK(A + 1): Write register to effective address
     MICROCODE(
         cpu->data_bus = cpu->A;
         cpu->mem_write();
     );
 }
 
-void MOS6502::STX() {   // DONE
+void MOS6502::STX() {
+    // TICK(A + 1): Write register to effective address
     MICROCODE(
         cpu->data_bus = cpu->X;
         cpu->mem_write();
     );
 }
 
-void MOS6502::STY() {   // DONE
+void MOS6502::STY() {
+    // TICK(A + 1): Write register to effective address
     MICROCODE(
         cpu->data_bus = cpu->Y;
         cpu->mem_write();
@@ -1239,6 +1289,7 @@ void MOS6502::TYA() {
  ********************************************************/
 
 void MOS6502::LAX() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
         cpu->A = cpu->data_bus;
@@ -1251,6 +1302,7 @@ void MOS6502::LAX() {
 
 
 void MOS6502::SAX() {
+    // TICK(A + 1): Write register to effective address
     MICROCODE(
         cpu->data_bus = cpu->A & cpu->X;
         cpu->mem_write();
