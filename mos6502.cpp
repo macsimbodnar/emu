@@ -264,19 +264,37 @@ void MOS6502::ZPI() {
     );
 }
 
-void MOS6502::ZPX() {   // DONE
+void MOS6502::ZPX() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Fetch address, increment PC
     MICROCODE(
         cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->address_bus = (cpu->data_bus + cpu->X) & 0x00FF;
+    );
+
+    // TICK(3): Read from address, add index register to it
+    MICROCODE(
+        cpu->address_bus = cpu->data_bus & 0x00FF;
+        cpu->mem_read();
+        cpu->address_bus = (cpu->address_bus + cpu->X) & 0x00FF;
     );
 }
 
-void MOS6502::ZPY() {   // DONE
+void MOS6502::ZPY() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Fetch address, increment PC
     MICROCODE(
         cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->address_bus = (cpu->data_bus + cpu->Y) & 0x00FF;
+    );
+
+    // TICK(3): Read from address, add index register to it
+    MICROCODE(
+        cpu->address_bus = cpu->data_bus & 0x00FF;
+        cpu->mem_read();
+        cpu->address_bus = (cpu->address_bus + cpu->Y) & 0x00FF;
     );
 }
 
