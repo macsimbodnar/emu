@@ -952,7 +952,16 @@ void MOS6502::ORA() {   // DONE
     );
 }
 
-void MOS6502::PHA() {   // DONE
+void MOS6502::PHA() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
+
+    // TICK(3): Push register on stack, decrement S
     MICROCODE(
         cpu->data_bus = cpu->A;
         cpu->address_bus = STACK_OFFSET + cpu->S--;
@@ -960,16 +969,22 @@ void MOS6502::PHA() {   // DONE
     );
 }
 
-void MOS6502::PHP() {   // DONE
+void MOS6502::PHP() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
+
+    // TICK(3): Push register on stack, decrement S
     MICROCODE(
         cpu->set_flag(MOS6502::B, true);
-        /* cpu->set_flag(MOS6502::U, true); */
-
         cpu->data_bus = cpu->P;
         cpu->address_bus = STACK_OFFSET + cpu->S--;
         cpu->mem_write();
         cpu->set_flag(MOS6502::B, false);
-        /* cpu->set_flag(MOS6502::U, false); */
     );
 }
 
