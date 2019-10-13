@@ -87,6 +87,8 @@ The **EMU** is case insensitive for now
 
 ### Now
 
+* Replace tmp_buff uint16_t with tmp_h and tmp_l uint8_t
+* Test BRK instruction
 * Implement decimal mode
 * Make processor cycle precise (each clock tick should change the inner status of the processor like in this [simulator](http://www.visual6502.org/JSSim/index.html))
 * Check if the opcode table is correct in terms of cycles

@@ -638,42 +638,51 @@ void MOS6502::BPL() {   // DONE
 // *INDENT-ON*
 }
 
-void MOS6502::BRK() {   // DONE
+void MOS6502::BRK() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away), increment PC
     MICROCODE(
-        cpu->PC++;
+        cpu->address_bus = cpu->PC++;
+        cpu->mem_read();
+    );
 
-        cpu->set_flag(MOS6502::I, true);
 
-        /* Store PC on stack */
+    // TICK(3): Push PC H on stack, decrement S
+    MICROCODE(
         cpu->address_bus = STACK_OFFSET + cpu->S--;
         cpu->data_bus = (cpu->PC >> 8) & 0x00FF;
         cpu->mem_write();
     );
 
+    // TICK(4): Push PC L on stack, decrement S
     MICROCODE(
         cpu->address_bus = STACK_OFFSET + cpu->S--;
         cpu->data_bus = cpu->PC & 0x00FF;
         cpu->mem_write();
     );
 
+    // TICK(5): Push P on stack (with B flag set), decrement S
     MICROCODE(
         /* Store P on stack */
         cpu->set_flag(MOS6502::B, true);
         cpu->address_bus = STACK_OFFSET + cpu->S--;
         cpu->data_bus = cpu->P;
         cpu->mem_write();
+        /* TODO(max): verify if this should be false after push */
         cpu->set_flag(MOS6502::B, false);
     );
 
+    // TICK(6): Fetch PC L from 0xFFFE
     MICROCODE(
-        /* Set PC from address  $FFFE and $FFFF */
-        cpu->address_bus = 0xFFFE;
+        cpu->address_bus = BRK_PCL;
         cpu->mem_read();
         cpu->tmp_buff = cpu->data_bus & 0x00FF;
     );
 
+    // TICK(7): Fetch PC H from 0xFFFF
     MICROCODE(
-        cpu->address_bus = 0xFFFF;
+        cpu->address_bus = BRK_PCH;
         cpu->mem_read();
         cpu->PC = ((((uint16_t)cpu->data_bus) << 8) & 0xFF00) | cpu->tmp_buff;
     );
@@ -1016,28 +1025,41 @@ void MOS6502::ROR() {   // DONE
     );
 }
 
-void MOS6502::RTI() {   // DONE
+void MOS6502::RTI() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
+
+    // TICK(3): Increment S
     MICROCODE(
         cpu->S++;
+    );
+
+    // TICK(4): Pull P from stack, increment S
+    MICROCODE(
         cpu->address_bus = STACK_OFFSET + cpu->S;
         cpu->mem_read();
         cpu->P = cpu->data_bus;
-        cpu->P &= ~MOS6502::B;
-        /* cpu->P &= ~MOS6502::U; */
+        /* TODO(max): why this is not zero? */
         cpu->set_flag(MOS6502::U, true);
-
         cpu->S++;
-        cpu->address_bus = STACK_OFFSET + cpu->S;
     );
 
+    // TICK(5): Pull PC L from stack, increment S
     MICROCODE(
+        cpu->address_bus = STACK_OFFSET + cpu->S;
         cpu->mem_read();
         cpu->tmp_buff = (uint16_t)cpu->data_bus;
         cpu->S++;
-        cpu->address_bus = STACK_OFFSET + cpu->S;
     );
 
+    // TICK(6): Pull PC H from stack
     MICROCODE(
+        cpu->address_bus = STACK_OFFSET + cpu->S;
         cpu->mem_read();
         cpu->tmp_buff |= (uint16_t)cpu->data_bus << 8;
 

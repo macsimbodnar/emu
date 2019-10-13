@@ -10,6 +10,8 @@
 #define PROCESSOR_STATUS_DEFAULT  0x24
 #define INITIAL_ADDRESS           0xFFFC
 #define STACK_OFFSET              0x0100
+#define BRK_PCL                   0xFFFE
+#define BRK_PCH                   0xFFFF
 
 
 class MOS6502 {
