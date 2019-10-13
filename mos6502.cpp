@@ -215,7 +215,15 @@ void MOS6502::log(const std::string &msg) {
 /********************************************************
  *                  ADDRESSING MODES                    *
  ********************************************************/
-void MOS6502::ACC() {   // DONE
+void MOS6502::ACC() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
+
     accumulator_addressing = true;
 }
 
@@ -306,7 +314,13 @@ void MOS6502::ABY() {   // DONE
 }
 
 void MOS6502::IMP() {   // DONE
-    asm("nop");
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
 }
 
 void MOS6502::REL() {   // DONE
@@ -639,6 +653,10 @@ void MOS6502::BPL() {   // DONE
 }
 
 void MOS6502::BRK() {
+    // NOTE(max):   Clear the microcode_q because in this case the
+    //              immediate addressing mode is different
+    microcode_q.clear();
+
     // TICK(1): Fetch opcode, increment PC
 
     // TICK(2): Read next instruction byte (and throw it away), increment PC
@@ -646,7 +664,6 @@ void MOS6502::BRK() {
         cpu->address_bus = cpu->PC++;
         cpu->mem_read();
     );
-
 
     // TICK(3): Push PC H on stack, decrement S
     MICROCODE(
@@ -856,7 +873,7 @@ void MOS6502::JMP() {   // DONE
     );
 }
 
-void MOS6502::JSR() {   // DONE
+void MOS6502::JSR() {
     // NOTE(max):   Clear the microcode because the JSR act different from normal
     //              abbsolute addressing mode so i need to remove the addressing mode code
     microcode_q.clear();
@@ -973,13 +990,6 @@ void MOS6502::ORA() {   // DONE
 }
 
 void MOS6502::PHA() {
-    // TICK(1): Fetch opcode, increment PC
-
-    // TICK(2): Read next instruction byte (and throw it away)
-    MICROCODE(
-        cpu->address_bus = cpu->PC + 1;
-        cpu->mem_read();
-    );
 
     // TICK(3): Push register on stack, decrement S
     MICROCODE(
@@ -990,13 +1000,6 @@ void MOS6502::PHA() {
 }
 
 void MOS6502::PHP() {
-    // TICK(1): Fetch opcode, increment PC
-
-    // TICK(2): Read next instruction byte (and throw it away)
-    MICROCODE(
-        cpu->address_bus = cpu->PC + 1;
-        cpu->mem_read();
-    );
 
     // TICK(3): Push register on stack, decrement S
     MICROCODE(
@@ -1009,13 +1012,6 @@ void MOS6502::PHP() {
 }
 
 void MOS6502::PLA() {
-    // TICK(1): Fetch opcode, increment PC
-
-    // TICK(2): Read next instruction byte (and throw it away)
-    MICROCODE(
-        cpu->address_bus = cpu->PC + 1;
-        cpu->mem_read();
-    );
 
     // TICK(3): Increment S
     MICROCODE(
@@ -1033,13 +1029,6 @@ void MOS6502::PLA() {
 }
 
 void MOS6502::PLP() {
-    // TICK(1): Fetch opcode, increment PC
-
-    // TICK(2): Read next instruction byte (and throw it away)
-    MICROCODE(
-        cpu->address_bus = cpu->PC + 1;
-        cpu->mem_read();
-    );
 
     // TICK(3): Increment S
     MICROCODE(
@@ -1087,13 +1076,6 @@ void MOS6502::ROR() {   // DONE
 }
 
 void MOS6502::RTI() {
-    // TICK(1): Fetch opcode, increment PC
-
-    // TICK(2): Read next instruction byte (and throw it away)
-    MICROCODE(
-        cpu->address_bus = cpu->PC + 1;
-        cpu->mem_read();
-    );
 
     // TICK(3): Increment S
     MICROCODE(
@@ -1129,13 +1111,6 @@ void MOS6502::RTI() {
 }
 
 void MOS6502::RTS() {
-    // TICK(1): Fetch opcode, increment PC
-
-    // TICK(2): Read next instruction byte (and throw it away)
-    MICROCODE(
-        cpu->address_bus = cpu->PC + 1;
-        cpu->mem_read();
-    );
 
     // TICK(3): Increment S
     MICROCODE(
