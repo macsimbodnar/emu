@@ -857,23 +857,43 @@ void MOS6502::JMP() {   // DONE
 }
 
 void MOS6502::JSR() {   // DONE
+    // NOTE(max):   Clear the microcode because the JSR act different from normal
+    //              abbsolute addressing mode so i need to remove the addressing mode code
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Fetch low address byte, increment PC
     MICROCODE(
-        cpu->PC--;
+        cpu->address_bus = cpu->PC++;
+        cpu->mem_read();
+        cpu->tmp_buff = cpu->data_bus & 0x00FF;
+    );
 
-        cpu->tmp_buff = cpu->address_bus;
+    // TICK(3): Internal operation (predecrement S?)
+    MICROCODE(
+        asm("nop");
+    );
 
-        cpu->data_bus = (cpu->PC >> 8) & 0x00FF;
+    // TICK(4): Push PC H on stack, decrement S
+    MICROCODE(
         cpu->address_bus = STACK_OFFSET + cpu->S--;
+        cpu->data_bus = (cpu->PC >> 8) & 0x00FF;
         cpu->mem_write();
     );
 
+    // TICK(5): Push PC L on stack, decrement S
     MICROCODE(
-        cpu->data_bus = cpu->PC & 0x00FF;
         cpu->address_bus = STACK_OFFSET + cpu->S--;
+        cpu->data_bus = cpu->PC & 0x00FF;
         cpu->mem_write();
+    );
 
-        cpu->address_bus = cpu->tmp_buff;
-        cpu->PC = cpu->address_bus;
+    // TICK(6): Copy low address byte to PC L, fetch high address byte to PC H
+    MICROCODE(
+        cpu->address_bus = cpu->PC;
+        cpu->mem_read();
+        cpu->PC = (((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff;
     );
 }
 

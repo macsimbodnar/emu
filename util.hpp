@@ -72,4 +72,10 @@ class Queue {
         elem_out = m_memory[m_rear];
         return true;
     }
+
+    inline void clear() {
+        m_size = 0;
+        m_front = 0;
+        m_rear = S - 1;
+    }
 };
