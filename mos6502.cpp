@@ -988,9 +988,22 @@ void MOS6502::PHP() {
     );
 }
 
-void MOS6502::PLA() {   // DONE
+void MOS6502::PLA() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
+
+    // TICK(3): Increment S
     MICROCODE(
         cpu->S++;
+    );
+
+    // TICK(4): Pull register from stack
+    MICROCODE(
         cpu->address_bus = STACK_OFFSET + cpu->S;
         cpu->mem_read();
         cpu->A = cpu->data_bus;
@@ -999,9 +1012,22 @@ void MOS6502::PLA() {   // DONE
     );
 }
 
-void MOS6502::PLP() {   // DONE
+void MOS6502::PLP() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
+
+    // TICK(3): Increment S
     MICROCODE(
         cpu->S++;
+    );
+
+    // TICK(4): Pull register from stack
+    MICROCODE(
         cpu->address_bus = STACK_OFFSET + cpu->S;
         cpu->mem_read();
         cpu->P = cpu->data_bus;
