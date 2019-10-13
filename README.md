@@ -88,6 +88,7 @@ The **EMU** is case insensitive for now
 ### Now
 
 * Replace tmp_buff uint16_t with tmp_h and tmp_l uint8_t
+* Fix the Immediate addressing
 * Test BRK instruction
 * Test the Queue Class
 * Implement decimal mode

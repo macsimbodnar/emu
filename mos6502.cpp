@@ -228,12 +228,16 @@ void MOS6502::ACC() {
 }
 
 void MOS6502::IMM() {   // DONE
-    address_bus = PC++;
+    // TICK(1): Fetch opcode, increment PC
 
-    // TODO(max): this one after decode the opcode start to execute it
+    // TODO(max): The PC should be incremented at the same cycle that the mem_read!
+    address_bus = PC++;
 }
 
-void MOS6502::ABS() {   // DONE
+void MOS6502::ABS() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): TODO
     MICROCODE(
         cpu->address_bus = cpu->PC++;
         cpu->mem_read();
@@ -414,72 +418,9 @@ void MOS6502::IIY() {   // DONE
     // }
 }
 
-void MOS6502::IND() {   // DONE
-    // TODO(max): fix this
-    // address = PC++;
-    // mem_read();
-    // tmp_buff = data_bus & 0x00FF;
-    // address = PC++;
-    // mem_read();
-    // tmp_buff = (((uint16_t)data_bus) << 8) | tmp_buff;
-
-    // address = tmp_buff;
-    // mem_read();
-    // tmp_buff = data_bus & 0x00FF;
-
-    // if (tmp_buff == 0x00FF) {    // Page boundary hardware bug
-    //     address &= 0xFF00;
-    // } else { // Behave normally
-    //     address++;
-    // }
-
-    // mem_read();
-    // address = (((uint16_t)data_bus) << 8) | tmp_buff;
-
-// *INDENT-OFF*
-    MICROCODE(
-        cpu->address_bus = cpu->PC++;
-        cpu->mem_read();
-        cpu->lo = cpu->data_bus;
-
-        if (cpu->lo == 0x00FF) {
-            cpu->page_boundary_crossed = true;
-        } else {
-            cpu->page_boundary_crossed = false;
-        }
-
-        cpu->address_bus = cpu->PC++;
-    );
-// *INDENT-ON*
-
-    MICROCODE(
-        cpu->mem_read();
-        cpu->hi = cpu->data_bus;
-
-        cpu->tmp_buff = (cpu->hi << 8) | cpu->lo;
-
-        cpu->address_bus = cpu->tmp_buff;
-    );
-
-// *INDENT-OFF*
-    MICROCODE(
-        cpu->mem_read();
-        cpu->lo = cpu->data_bus;
-
-        if (cpu->page_boundary_crossed) { /* Page boundary hardware bug */
-            cpu->address_bus = cpu->tmp_buff & 0xFF00;
-        } else {
-            cpu->address_bus = cpu->tmp_buff + 1;
-        }
-    );
-// *INDENT-ON*
-
-    MICROCODE(
-        cpu->mem_read();
-        cpu->hi = cpu->data_bus;
-
-        cpu->address_bus = (cpu->hi << 8) | cpu->lo;
-    );
+void MOS6502::IND() {
+    // This is just a special JMP
+    asm("nop");
 }
 
 
@@ -867,10 +808,64 @@ void MOS6502::INY() {   // DONE
     );
 }
 
-void MOS6502::JMP() {   // DONE
+void MOS6502::JMP() {
+    // NOTE(max):   JMP is a particular instruction so need to be treated as an exception
+    //              0x4C JMP ABS
+    //              0x6C JMP IND
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Fetch low address byte, increment PC
     MICROCODE(
-        cpu->PC = cpu->address_bus;
+        cpu->address_bus = cpu->PC++;
+        cpu->mem_read();
+        cpu->tmp_buff = cpu->data_bus & 0x00FF;
     );
+
+    switch (opcode) {
+    case 0x4C:  // JMP ABS
+        // TICK(3): Copy low address byte to PCL, fetch high address byte to PCH
+        MICROCODE(
+            cpu->address_bus = cpu->PC;
+            cpu->mem_read();
+            cpu->PC = (((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff;
+        );
+        break;
+
+    case 0x6C:  // JMP IND
+        // TICK(3): Fetch pointer address high, increment PC
+        MICROCODE(
+            cpu->address_bus = cpu->PC++;
+            cpu->mem_read();
+        );
+
+        // TICK(4): Fetch low address to latch
+        MICROCODE(
+            cpu->address_bus = (((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff;
+            cpu->mem_read();
+            cpu->tmp_buff = cpu->data_bus & 0x00FF;
+        );
+
+        // TICK(5): Fetch PCH, copy latch to PCL
+        MICROCODE(
+            /*
+                NOTE(max):  The PCH will always be fetched from the same page
+                            than PCL, i.e. page boundary crossing is not handled.
+            */
+            cpu->address_bus = (((cpu->address_bus & 0x00FF) == 0x00FF)     ?
+                                cpu->address_bus & 0xFF00                   :  /* Page boundary hardware bug */
+                                cpu->address_bus + 1);
+
+            cpu->mem_read();
+            cpu->PC = (((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff;
+        );
+        break;
+
+    default:
+        log("Unexpected JMP opcode");
+        break;
+    }
 }
 
 void MOS6502::JSR() {
