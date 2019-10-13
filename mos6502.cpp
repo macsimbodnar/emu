@@ -1067,21 +1067,38 @@ void MOS6502::RTI() {
     );
 }
 
-void MOS6502::RTS() {   // DONE
+void MOS6502::RTS() {
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
+
+    // TICK(3): Increment S
     MICROCODE(
         cpu->S++;
+    );
+
+    // TICK(4): Pull PC L from stack, increment S
+    MICROCODE(
         cpu->address_bus = STACK_OFFSET + cpu->S;
         cpu->mem_read();
         cpu->tmp_buff = (uint16_t)cpu->data_bus;
         cpu->S++;
-        cpu->address_bus = STACK_OFFSET + cpu->S;
     );
 
+    // TICK(5): Pull PC H from stack
     MICROCODE(
+        cpu->address_bus = STACK_OFFSET + cpu->S;
         cpu->mem_read();
         cpu->tmp_buff |= (uint16_t)cpu->data_bus << 8;
-
         cpu->PC = cpu->tmp_buff;
+    );
+
+    // TICK(6): Increment PC
+    MICROCODE(
         cpu->PC++;
     );
 }
