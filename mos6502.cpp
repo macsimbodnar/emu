@@ -26,7 +26,7 @@ void MOS6502::mem_read() {
         data_bus = A;
     } else {
         // NOTE(max): intentionally not checking if function is nullptr
-        mem_access(user_data, address, access_mode_t::READ, data_bus);
+        mem_access(user_data, address_bus, access_mode_t::READ, data_bus);
     }
 }
 
@@ -35,7 +35,7 @@ void MOS6502::mem_write() {
         A = data_bus;
     } else {
         // NOTE(max): intentionally not checking if function is nullptr
-        mem_access(user_data, address, access_mode_t::WRITE, data_bus);
+        mem_access(user_data, address_bus, access_mode_t::WRITE, data_bus);
     }
 }
 
@@ -45,12 +45,12 @@ bool MOS6502::clock() {
 
     if (microcode_q.is_empty()) {   // Fetch and decode next instruction
         accumulator_addressing = false;
-        address = PC++;
+        address_bus = PC++;
         mem_read();
         opcode = data_bus;
 
         // TEST
-        PC_executed = address;
+        PC_executed = address_bus;
 
         if (opcode_table[opcode].instruction_bytes > 1) {
             mem_access(user_data, PC_executed + 1, access_mode_t::READ, arg1);
@@ -94,16 +94,16 @@ void MOS6502::reset() {
     P = PROCESSOR_STATUS_DEFAULT;
 
     // Read from fix mem address to jump to programmable location
-    address = INITIAL_ADDRESS;
+    address_bus = INITIAL_ADDRESS;
     mem_read();
     tmp_buff = data_bus & 0x00FF;
-    address++;
+    address_bus++;
     mem_read();
     PC = (((uint16_t)data_bus) << 8) | tmp_buff;
 
     // Clear helpers
     relative_adderess = 0x0000;
-    address = 0x0000;
+    address_bus = 0x0000;
     data_bus = 0x00;
     accumulator_addressing = false;
     cycles = 7;
@@ -114,11 +114,11 @@ void MOS6502::irq() {   // Read from 0xFFFE
     if (read_flag(I) == false) {
         // Push PC on the stack
         // Write first the high because the stack decrease
-        address = STACK_OFFSET + S--;
+        address_bus = STACK_OFFSET + S--;
         data_bus = (PC >> 8) & 0x00FF;
         mem_write();    // write high byte
 
-        address = STACK_OFFSET + S--;
+        address_bus = STACK_OFFSET + S--;
         data_bus = PC & 0x00FF;
         mem_write();    // write low byte
 
@@ -128,14 +128,14 @@ void MOS6502::irq() {   // Read from 0xFFFE
         set_flag(I, true);
 
         data_bus = P;
-        address = STACK_OFFSET + S--;
+        address_bus = STACK_OFFSET + S--;
         mem_write();
 
         // Read new PC from the fixed location
-        address = 0xFFFE;
+        address_bus = 0xFFFE;
         mem_read();
         tmp_buff = data_bus & 0x00FF;
-        address++;
+        address_bus++;
         mem_read();
         PC = (((uint16_t)data_bus) << 8) | tmp_buff;
     }
@@ -145,11 +145,11 @@ void MOS6502::irq() {   // Read from 0xFFFE
 void MOS6502::nmi() {   // Read from 0xFFFA
     // Push PC on the stack
     // Write first the high because the stack decrease
-    address = STACK_OFFSET + S--;
+    address_bus = STACK_OFFSET + S--;
     data_bus = (PC >> 8) & 0x00FF;
     mem_write();    // write high byte
 
-    address = STACK_OFFSET + S--;
+    address_bus = STACK_OFFSET + S--;
     data_bus = PC & 0x00FF;
     mem_write();    // write low byte
 
@@ -159,14 +159,14 @@ void MOS6502::nmi() {   // Read from 0xFFFA
     set_flag(I, true);
 
     data_bus = P;
-    address = STACK_OFFSET + S--;
+    address_bus = STACK_OFFSET + S--;
     mem_write();
 
     // Read new PC from the fixed location
-    address = 0xFFFA;
+    address_bus = 0xFFFA;
     mem_read();
     tmp_buff = data_bus & 0x00FF;
-    address++;
+    address_bus++;
     mem_read();
     PC = (((uint16_t)data_bus) << 8) | tmp_buff;
 }
@@ -183,7 +183,7 @@ p_state_t MOS6502::get_status() {
             opcode,
             opcode_table[opcode].instruction_bytes,
             data_bus,
-            address,
+            address_bus,
             relative_adderess,
             tmp_buff,
             0,  // cycles
@@ -220,60 +220,60 @@ void MOS6502::ACC() {   // DONE
 }
 
 void MOS6502::IMM() {   // DONE
-    address = PC++;
+    address_bus = PC++;
 
     // TODO(max): this one after decode the opcode start to execute it
 }
 
 void MOS6502::ABS() {   // DONE
     MICROCODE(
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
         cpu->tmp_buff = cpu->data_bus & 0x00FF;
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
     );
 
     MICROCODE(
         cpu->mem_read();
-        cpu->address = (((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff;
+        cpu->address_bus = (((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff;
     );
 }
 
 void MOS6502::ZPI() {   // DONE
     MICROCODE(
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->address = cpu->data_bus & 0x00FF;
+        cpu->address_bus = cpu->data_bus & 0x00FF;
     );
 }
 
 void MOS6502::ZPX() {   // DONE
     MICROCODE(
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->address = (cpu->data_bus + cpu->X) & 0x00FF;
+        cpu->address_bus = (cpu->data_bus + cpu->X) & 0x00FF;
     );
 }
 
 void MOS6502::ZPY() {   // DONE
     MICROCODE(
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->address = (cpu->data_bus + cpu->Y) & 0x00FF;
+        cpu->address_bus = (cpu->data_bus + cpu->Y) & 0x00FF;
     );
 }
 
 void MOS6502::ABX() {   // DONE
     MICROCODE(
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
         cpu->tmp_buff = cpu->data_bus & 0x00FF;
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
     );
 
     MICROCODE(
         cpu->mem_read();
-        cpu->address = ((((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff) + cpu->X;
+        cpu->address_bus = ((((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff) + cpu->X;
     );
 
     // if ((address & 0xFF00) != (((uint16_t)data_bus) << 8)) {
@@ -286,15 +286,15 @@ void MOS6502::ABX() {   // DONE
 
 void MOS6502::ABY() {   // DONE
     MICROCODE(
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
         cpu->tmp_buff = cpu->data_bus & 0x00FF;
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
     );
 
     MICROCODE(
         cpu->mem_read();
-        cpu->address = ((((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff) + cpu->Y;
+        cpu->address_bus = ((((uint16_t)cpu->data_bus) << 8) | cpu->tmp_buff) + cpu->Y;
     );
 
     // if ((address & 0xFF00) != (((uint16_t)data_bus) << 8)) {
@@ -312,7 +312,7 @@ void MOS6502::IMP() {   // DONE
 void MOS6502::REL() {   // DONE
 // *INDENT-OFF*
     MICROCODE(
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
         cpu->relative_adderess = cpu->data_bus & 0x00FF;
         if (cpu->relative_adderess & 0x80) {   /* if relative_adderess >= 128 */
@@ -334,25 +334,25 @@ void MOS6502::IIX() {   // DONE
     // mem_read();
     // address = ((((uint16_t)data_bus) << 8) & 0xFF00) | tmp_buff;
     MICROCODE(
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
         cpu->tmp_buff = cpu->data_bus;
 
-        cpu->address = (uint16_t)(cpu->tmp_buff + (uint16_t)cpu->X) & 0x00FF;
+        cpu->address_bus = (uint16_t)(cpu->tmp_buff + (uint16_t)cpu->X) & 0x00FF;
     );
 
     MICROCODE(
         cpu->mem_read();
         cpu->lo = cpu->data_bus;
 
-        cpu->address = (uint16_t)(cpu->tmp_buff + (uint16_t)cpu->X + 1) & 0x00FF;
+        cpu->address_bus = (uint16_t)(cpu->tmp_buff + (uint16_t)cpu->X + 1) & 0x00FF;
     );
 
     MICROCODE(
         cpu->mem_read();
         cpu->hi = cpu->data_bus;
 
-        cpu->address = (cpu->hi << 8) | cpu->lo;
+        cpu->address_bus = (cpu->hi << 8) | cpu->lo;
     );
 }
 
@@ -371,26 +371,26 @@ void MOS6502::IIY() {   // DONE
     //     return true;
     // }
     MICROCODE(
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
         cpu->tmp_buff = cpu->data_bus;
 
-        cpu->address = cpu->tmp_buff & 0x00FF;
+        cpu->address_bus = cpu->tmp_buff & 0x00FF;
     );
 
     MICROCODE(
         cpu->mem_read();
         cpu->lo = cpu->data_bus;
 
-        cpu->address = (cpu->tmp_buff + 1) & 0x00FF;
+        cpu->address_bus = (cpu->tmp_buff + 1) & 0x00FF;
     );
 
     MICROCODE(
         cpu->mem_read();
         cpu->hi = cpu->data_bus;
 
-        cpu->address = (cpu->hi << 8) | cpu->lo;
-        cpu->address += cpu->Y;
+        cpu->address_bus = (cpu->hi << 8) | cpu->lo;
+        cpu->address_bus += cpu->Y;
     );
     // if ((address & 0xFF00) != (hi << 8)) {
     // TODO() fix this with reasonable code
@@ -424,7 +424,7 @@ void MOS6502::IND() {   // DONE
 
 // *INDENT-OFF*
     MICROCODE(
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
         cpu->mem_read();
         cpu->lo = cpu->data_bus;
 
@@ -434,7 +434,7 @@ void MOS6502::IND() {   // DONE
             cpu->page_boundary_crossed = false;
         }
 
-        cpu->address = cpu->PC++;
+        cpu->address_bus = cpu->PC++;
     );
 // *INDENT-ON*
 
@@ -444,7 +444,7 @@ void MOS6502::IND() {   // DONE
 
         cpu->tmp_buff = (cpu->hi << 8) | cpu->lo;
 
-        cpu->address = cpu->tmp_buff;
+        cpu->address_bus = cpu->tmp_buff;
     );
 
 // *INDENT-OFF*
@@ -453,9 +453,9 @@ void MOS6502::IND() {   // DONE
         cpu->lo = cpu->data_bus;
 
         if (cpu->page_boundary_crossed) { /* Page boundary hardware bug */
-            cpu->address = cpu->tmp_buff & 0xFF00;
+            cpu->address_bus = cpu->tmp_buff & 0xFF00;
         } else {
-            cpu->address = cpu->tmp_buff + 1;
+            cpu->address_bus = cpu->tmp_buff + 1;
         }
     );
 // *INDENT-ON*
@@ -464,7 +464,7 @@ void MOS6502::IND() {   // DONE
         cpu->mem_read();
         cpu->hi = cpu->data_bus;
 
-        cpu->address = (cpu->hi << 8) | cpu->lo;
+        cpu->address_bus = (cpu->hi << 8) | cpu->lo;
     );
 }
 
@@ -522,13 +522,13 @@ void MOS6502::BCC() {   // DONE
     MICROCODE(
         if (cpu->read_flag(C) == false) {
             /* cycles++; */
-            cpu->address = cpu->PC + cpu->relative_adderess;
+            cpu->address_bus = cpu->PC + cpu->relative_adderess;
             /*
             if ((address & 0xFF00) != (PC & 0xFF00)) {
                  cycles++;
             }
             */
-            cpu->PC = cpu->address;
+            cpu->PC = cpu->address_bus;
         }
     );
 // *INDENT-ON*
@@ -539,13 +539,13 @@ void MOS6502::BCS() {   // DONE
     MICROCODE(
         if (cpu->read_flag(C)) {
             /* cycles++; */
-            cpu->address = cpu->PC + cpu->relative_adderess;
+            cpu->address_bus = cpu->PC + cpu->relative_adderess;
             /*
             if ((address & 0xFF00) != (PC & 0xFF00)) {
                 cycles++;
             }
             */
-            cpu->PC = cpu->address;
+            cpu->PC = cpu->address_bus;
         }
     );
 // *INDENT-ON*
@@ -557,14 +557,14 @@ void MOS6502::BEQ() {   // DONE
         if (cpu->read_flag(Z)) {
             /* cycles++; */
 
-            cpu->address = cpu->PC + cpu->relative_adderess;
+            cpu->address_bus = cpu->PC + cpu->relative_adderess;
             /*
             if ((address & 0xFF00) != (PC & 0xFF00)) {
                 cycles++;
             }
             */
 
-            cpu->PC = cpu->address;
+            cpu->PC = cpu->address_bus;
         }
     );
 // *INDENT-ON*
@@ -587,14 +587,14 @@ void MOS6502::BMI() {   // DONE
         if (cpu->read_flag(MOS6502::N)) {
             /* cycles++; */
 
-            cpu->address = cpu->PC + cpu->relative_adderess;
+            cpu->address_bus = cpu->PC + cpu->relative_adderess;
             /*
             if ((address & 0xFF00) != (PC & 0xFF00)) {
                 cycles++;
             }
             */
 
-            cpu->PC = cpu->address;
+            cpu->PC = cpu->address_bus;
         }
     );
 // *INDENT-ON*
@@ -606,14 +606,14 @@ void MOS6502::BNE() {   // DONE
         if (cpu->read_flag(MOS6502::Z) == false) {
             /* cycles++; */
 
-            cpu->address = cpu->PC + cpu->relative_adderess;
+            cpu->address_bus = cpu->PC + cpu->relative_adderess;
             /*
             if ((address & 0xFF00) != (PC & 0xFF00)) {
                 cycles++;
             }
             */
 
-            cpu->PC = cpu->address;
+            cpu->PC = cpu->address_bus;
         }
     );
 // *INDENT-ON*
@@ -625,14 +625,14 @@ void MOS6502::BPL() {   // DONE
         if (cpu->read_flag(MOS6502::N) == false) {
             /* cycles++; */
 
-            cpu->address = cpu->PC + cpu->relative_adderess;
+            cpu->address_bus = cpu->PC + cpu->relative_adderess;
             /*
             if ((address & 0xFF00) != (PC & 0xFF00)) {
                 cycles++;
             }
             */
 
-            cpu->PC = cpu->address;
+            cpu->PC = cpu->address_bus;
         }
     );
 // *INDENT-ON*
@@ -645,13 +645,13 @@ void MOS6502::BRK() {   // DONE
         cpu->set_flag(MOS6502::I, true);
 
         /* Store PC on stack */
-        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->address_bus = STACK_OFFSET + cpu->S--;
         cpu->data_bus = (cpu->PC >> 8) & 0x00FF;
         cpu->mem_write();
     );
 
     MICROCODE(
-        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->address_bus = STACK_OFFSET + cpu->S--;
         cpu->data_bus = cpu->PC & 0x00FF;
         cpu->mem_write();
     );
@@ -659,7 +659,7 @@ void MOS6502::BRK() {   // DONE
     MICROCODE(
         /* Store P on stack */
         cpu->set_flag(MOS6502::B, true);
-        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->address_bus = STACK_OFFSET + cpu->S--;
         cpu->data_bus = cpu->P;
         cpu->mem_write();
         cpu->set_flag(MOS6502::B, false);
@@ -667,13 +667,13 @@ void MOS6502::BRK() {   // DONE
 
     MICROCODE(
         /* Set PC from address  $FFFE and $FFFF */
-        cpu->address = 0xFFFE;
+        cpu->address_bus = 0xFFFE;
         cpu->mem_read();
         cpu->tmp_buff = cpu->data_bus & 0x00FF;
     );
 
     MICROCODE(
-        cpu->address = 0xFFFF;
+        cpu->address_bus = 0xFFFF;
         cpu->mem_read();
         cpu->PC = ((((uint16_t)cpu->data_bus) << 8) & 0xFF00) | cpu->tmp_buff;
     );
@@ -685,14 +685,14 @@ void MOS6502::BVC() {   // DONE
         if (cpu->read_flag(MOS6502::O) == false) {
             /* cycles++; */
 
-            cpu->address = cpu->PC + cpu->relative_adderess;
+            cpu->address_bus = cpu->PC + cpu->relative_adderess;
             /*
             if ((address & 0xFF00) != (PC & 0xFF00)) {
                 cycles++;
             }
             */
 
-            cpu->PC = cpu->address;
+            cpu->PC = cpu->address_bus;
         }
     );
 // *INDENT-ON*
@@ -704,14 +704,14 @@ void MOS6502::BVS() {   // DONE
         if (cpu->read_flag(MOS6502::O)) {
             /* cycles++; */
 
-            cpu->address = cpu->PC + cpu->relative_adderess;
+            cpu->address_bus = cpu->PC + cpu->relative_adderess;
             /*
             if ((address & 0xFF00) != (PC & 0xFF00)) {
                 cycles++;
             }
             */
 
-            cpu->PC = cpu->address;
+            cpu->PC = cpu->address_bus;
         }
     );
 // *INDENT-ON*
@@ -843,7 +843,7 @@ void MOS6502::INY() {   // DONE
 
 void MOS6502::JMP() {   // DONE
     MICROCODE(
-        cpu->PC = cpu->address;
+        cpu->PC = cpu->address_bus;
     );
 }
 
@@ -851,20 +851,20 @@ void MOS6502::JSR() {   // DONE
     MICROCODE(
         cpu->PC--;
 
-        cpu->tmp_buff = cpu->address;
+        cpu->tmp_buff = cpu->address_bus;
 
         cpu->data_bus = (cpu->PC >> 8) & 0x00FF;
-        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->address_bus = STACK_OFFSET + cpu->S--;
         cpu->mem_write();
     );
 
     MICROCODE(
         cpu->data_bus = cpu->PC & 0x00FF;
-        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->address_bus = STACK_OFFSET + cpu->S--;
         cpu->mem_write();
 
-        cpu->address = cpu->tmp_buff;
-        cpu->PC = cpu->address;
+        cpu->address_bus = cpu->tmp_buff;
+        cpu->PC = cpu->address_bus;
     );
 }
 
@@ -946,7 +946,7 @@ void MOS6502::ORA() {   // DONE
 void MOS6502::PHA() {   // DONE
     MICROCODE(
         cpu->data_bus = cpu->A;
-        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->address_bus = STACK_OFFSET + cpu->S--;
         cpu->mem_write();
     );
 }
@@ -957,7 +957,7 @@ void MOS6502::PHP() {   // DONE
         /* cpu->set_flag(MOS6502::U, true); */
 
         cpu->data_bus = cpu->P;
-        cpu->address = STACK_OFFSET + cpu->S--;
+        cpu->address_bus = STACK_OFFSET + cpu->S--;
         cpu->mem_write();
         cpu->set_flag(MOS6502::B, false);
         /* cpu->set_flag(MOS6502::U, false); */
@@ -967,7 +967,7 @@ void MOS6502::PHP() {   // DONE
 void MOS6502::PLA() {   // DONE
     MICROCODE(
         cpu->S++;
-        cpu->address = STACK_OFFSET + cpu->S;
+        cpu->address_bus = STACK_OFFSET + cpu->S;
         cpu->mem_read();
         cpu->A = cpu->data_bus;
         cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
@@ -978,7 +978,7 @@ void MOS6502::PLA() {   // DONE
 void MOS6502::PLP() {   // DONE
     MICROCODE(
         cpu->S++;
-        cpu->address = STACK_OFFSET + cpu->S;
+        cpu->address_bus = STACK_OFFSET + cpu->S;
         cpu->mem_read();
         cpu->P = cpu->data_bus;
         cpu->set_flag(MOS6502::B, false);
@@ -1019,7 +1019,7 @@ void MOS6502::ROR() {   // DONE
 void MOS6502::RTI() {   // DONE
     MICROCODE(
         cpu->S++;
-        cpu->address = STACK_OFFSET + cpu->S;
+        cpu->address_bus = STACK_OFFSET + cpu->S;
         cpu->mem_read();
         cpu->P = cpu->data_bus;
         cpu->P &= ~MOS6502::B;
@@ -1027,14 +1027,14 @@ void MOS6502::RTI() {   // DONE
         cpu->set_flag(MOS6502::U, true);
 
         cpu->S++;
-        cpu->address = STACK_OFFSET + cpu->S;
+        cpu->address_bus = STACK_OFFSET + cpu->S;
     );
 
     MICROCODE(
         cpu->mem_read();
         cpu->tmp_buff = (uint16_t)cpu->data_bus;
         cpu->S++;
-        cpu->address = STACK_OFFSET + cpu->S;
+        cpu->address_bus = STACK_OFFSET + cpu->S;
     );
 
     MICROCODE(
@@ -1048,11 +1048,11 @@ void MOS6502::RTI() {   // DONE
 void MOS6502::RTS() {   // DONE
     MICROCODE(
         cpu->S++;
-        cpu->address = STACK_OFFSET + cpu->S;
+        cpu->address_bus = STACK_OFFSET + cpu->S;
         cpu->mem_read();
         cpu->tmp_buff = (uint16_t)cpu->data_bus;
         cpu->S++;
-        cpu->address = STACK_OFFSET + cpu->S;
+        cpu->address_bus = STACK_OFFSET + cpu->S;
     );
 
     MICROCODE(

@@ -81,7 +81,7 @@ class MOS6502 {
 
     uint8_t opcode;                               // Current opcode
     uint8_t data_bus;                             // Data currently on the bus
-    uint16_t address = INITIAL_ADDRESS;           // Current abbsolute address
+    uint16_t address_bus = INITIAL_ADDRESS;           // Current abbsolute address
     uint16_t relative_adderess;                   // Current abbsolute address
 
     bool accumulator_addressing = false;          // Is True when the current instruction is used with
