@@ -143,6 +143,8 @@ TEST_CASE("NES Test") {
                 printf("REGISTER Missmatch on iteration %d\n%s\n", iteration, line);
             }
 
+            REQUIRE_EQ(cmp_res, 0);
+
             // Compare cycles
             // size_t len = strlen(line);
             // cmp_res = memcmp(line + LOG_CYC_OFFSET, state_log + LOG_CYC_OFFSET, len - LOG_CYC_OFFSET);
@@ -150,8 +152,6 @@ TEST_CASE("NES Test") {
             // if (cmp_res != 0) {
             //     printf("CYCLES COUNT Missmatch on iteration %d\n%s\n", iteration, line);
             // }
-
-            // REQUIRE_EQ(cmp_res, 0);
         }
 
     }
