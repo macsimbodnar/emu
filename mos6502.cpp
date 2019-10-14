@@ -1,8 +1,11 @@
 #include "mos6502.hpp"
 
 #define MICROCODE(code) microcode_q.enqueue(([](MOS6502 * cpu) -> void { code }))
-#define ADDRESS(hi, lo) (static_cast<uint16_t>((static_cast<uint16_t>(hi) << 8) | lo))
+#define ADDRESS(hi, lo) (static_cast<uint16_t>((static_cast<uint16_t>(hi) << 8) | (lo)))
 // #define ADDRESS(hi, lo) (static_cast<uint16_t>(256U * hi + lo))
+#define ADD_LO_NO_CARRY(address, lo) (static_cast<uint16_t>(((address) & 0xFF00) | (static_cast<uint16_t>((address) + (lo)) & 0x00FF)))
+
+
 
 MOS6502::MOS6502(mem_access_callback mem_acc_clb, void *usr_data) :
     mem_access(mem_acc_clb), user_data(usr_data) {}
@@ -333,6 +336,7 @@ void MOS6502::ABX() {
 
         // Fix hi byte of address
         if (!cpu->skip_mem_read) {   // If no page skip then need to fix the page cross
+            // TODO(max): The + 1 can be wrong, because the offset is signed so need to check
             cpu->address_bus = ADDRESS(cpu->hi + 1, cpu->lo);
         }
     );
@@ -373,6 +377,7 @@ void MOS6502::ABY() {
 
         // Fix hi byte of address
         if (!cpu->skip_mem_read) {   // If no page skip then need to fix the page cross
+            // TODO(max): The + 1 can be wrong, because the offset is signed so need to check
             cpu->address_bus = ADDRESS(cpu->hi + 1, cpu->lo);
         }
     );
@@ -389,18 +394,10 @@ void MOS6502::IMP() {   // DONE
     );
 }
 
-void MOS6502::REL() {   // DONE
-    // NOTE(max): This addressing mode is specific for Branching
-// *INDENT-OFF*
-    MICROCODE(
-        cpu->address_bus = cpu->PC++;
-        cpu->mem_read();
-        cpu->relative_adderess = cpu->data_bus & 0x00FF;
-        if (cpu->relative_adderess & 0x80) {   /* if relative_adderess >= 128 */
-            cpu->relative_adderess |= 0xFF00;  /* the this is negative offset */
-        }
-    );
-// *INDENT-ON*
+void MOS6502::REL() {
+    // NOTE(max):   This addressing mode is specific for Branching,
+    //              all cases are handled inside the instruction
+    asm("nop");
 }
 
 void MOS6502::IIX() {   // DONE
@@ -553,54 +550,124 @@ void MOS6502::ASL() {
     );
 }
 
-void MOS6502::BCC() {   // DONE
+void MOS6502::BCC() {
+    // TICK(1): Fetch opcode, increment PC
+
 // *INDENT-OFF*
+    // TICK(2): Fetch operand, increment PC
     MICROCODE(
+        cpu->address_bus = cpu->PC++;
+        cpu->mem_read();
+        cpu->lo = cpu->data_bus;
+
+        /* if no branch taken just go with other instruction */ 
         if (cpu->read_flag(C) == false) {
-            /* cycles++; */
-            cpu->address_bus = cpu->PC + cpu->relative_adderess;
-            /*
-            if ((address & 0xFF00) != (PC & 0xFF00)) {
-                 cycles++;
-            }
-            */
-            cpu->PC = cpu->address_bus;
+           /* Branch Taken */
+
+            // TICK(3): If branch is taken, add operand to PCL.
+            cpu->MICROCODE(
+                /* Read the memory after the instruction */
+                cpu->address_bus = cpu->PC;
+                cpu->mem_read();
+
+                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+
+                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                    // TICK(4): Fix PCH. If it did not change, increment PC.
+                    cpu->MICROCODE(
+                        cpu->address_bus = cpu->PC;
+                        cpu->mem_read();
+
+                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                            cpu->PC += 0x0100;
+                        }
+                    );
+                } 
+
+                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+            );
         }
     );
 // *INDENT-ON*
 }
 
-void MOS6502::BCS() {   // DONE
+void MOS6502::BCS() {
+    // TICK(1): Fetch opcode, increment PC
+
 // *INDENT-OFF*
+    // TICK(2): Fetch operand, increment PC
     MICROCODE(
+        cpu->address_bus = cpu->PC++;
+        cpu->mem_read();
+        cpu->lo = cpu->data_bus;
+
+        /* if no branch taken just go with other instruction */ 
         if (cpu->read_flag(C)) {
-            /* cycles++; */
-            cpu->address_bus = cpu->PC + cpu->relative_adderess;
-            /*
-            if ((address & 0xFF00) != (PC & 0xFF00)) {
-                cycles++;
-            }
-            */
-            cpu->PC = cpu->address_bus;
+           /* Branch Taken */
+
+            // TICK(3): If branch is taken, add operand to PCL.
+            cpu->MICROCODE(
+                /* Read the memory after the instruction */
+                cpu->address_bus = cpu->PC;
+                cpu->mem_read();
+
+                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+
+                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                    // TICK(4): Fix PCH. If it did not change, increment PC.
+                    cpu->MICROCODE(
+                        cpu->address_bus = cpu->PC;
+                        cpu->mem_read();
+
+                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                            cpu->PC += 0x0100;
+                        }
+                    );
+                } 
+
+                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+            );
         }
     );
 // *INDENT-ON*
 }
 
-void MOS6502::BEQ() {   // DONE
+void MOS6502::BEQ() {
+    // TICK(1): Fetch opcode, increment PC
+
 // *INDENT-OFF*
+    // TICK(2): Fetch operand, increment PC
     MICROCODE(
+        cpu->address_bus = cpu->PC++;
+        cpu->mem_read();
+        cpu->lo = cpu->data_bus;
+
+        /* if no branch taken just go with other instruction */ 
         if (cpu->read_flag(Z)) {
-            /* cycles++; */
+           /* Branch Taken */
 
-            cpu->address_bus = cpu->PC + cpu->relative_adderess;
-            /*
-            if ((address & 0xFF00) != (PC & 0xFF00)) {
-                cycles++;
-            }
-            */
+            // TICK(3): If branch is taken, add operand to PCL.
+            cpu->MICROCODE(
+                /* Read the memory after the instruction */
+                cpu->address_bus = cpu->PC;
+                cpu->mem_read();
 
-            cpu->PC = cpu->address_bus;
+                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+
+                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                    // TICK(4): Fix PCH. If it did not change, increment PC.
+                    cpu->MICROCODE(
+                        cpu->address_bus = cpu->PC;
+                        cpu->mem_read();
+
+                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                            cpu->PC += 0x0100;
+                        }
+                    );
+                } 
+
+                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+            );
         }
     );
 // *INDENT-ON*
@@ -622,58 +689,123 @@ void MOS6502::BIT() {
 // *INDENT-ON*
 }
 
-void MOS6502::BMI() {   // DONE
+void MOS6502::BMI() {
+    // TICK(1): Fetch opcode, increment PC
+
 // *INDENT-OFF*
+    // TICK(2): Fetch operand, increment PC
     MICROCODE(
-        if (cpu->read_flag(MOS6502::N)) {
-            /* cycles++; */
+        cpu->address_bus = cpu->PC++;
+        cpu->mem_read();
+        cpu->lo = cpu->data_bus;
 
-            cpu->address_bus = cpu->PC + cpu->relative_adderess;
-            /*
-            if ((address & 0xFF00) != (PC & 0xFF00)) {
-                cycles++;
-            }
-            */
+        /* if no branch taken just go with other instruction */ 
+        if (cpu->read_flag(N)) {
+           /* Branch Taken */
 
-            cpu->PC = cpu->address_bus;
+            // TICK(3): If branch is taken, add operand to PCL.
+            cpu->MICROCODE(
+                /* Read the memory after the instruction */
+                cpu->address_bus = cpu->PC;
+                cpu->mem_read();
+
+                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+
+                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                    // TICK(4): Fix PCH. If it did not change, increment PC.
+                    cpu->MICROCODE(
+                        cpu->address_bus = cpu->PC;
+                        cpu->mem_read();
+
+                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                            cpu->PC += 0x0100;
+                        }
+                    );
+                } 
+
+                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+            );
         }
     );
 // *INDENT-ON*
 }
 
-void MOS6502::BNE() {   // DONE
+void MOS6502::BNE() {
+    // TICK(1): Fetch opcode, increment PC
+
 // *INDENT-OFF*
+    // TICK(2): Fetch operand, increment PC
     MICROCODE(
-        if (cpu->read_flag(MOS6502::Z) == false) {
-            /* cycles++; */
+        cpu->address_bus = cpu->PC++;
+        cpu->mem_read();
+        cpu->lo = cpu->data_bus;
 
-            cpu->address_bus = cpu->PC + cpu->relative_adderess;
-            /*
-            if ((address & 0xFF00) != (PC & 0xFF00)) {
-                cycles++;
-            }
-            */
+        /* if no branch taken just go with other instruction */ 
+        if (cpu->read_flag(Z) == false) {
+           /* Branch Taken */
 
-            cpu->PC = cpu->address_bus;
+            // TICK(3): If branch is taken, add operand to PCL.
+            cpu->MICROCODE(
+                /* Read the memory after the instruction */
+                cpu->address_bus = cpu->PC;
+                cpu->mem_read();
+
+                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+
+                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                    // TICK(4): Fix PCH. If it did not change, increment PC.
+                    cpu->MICROCODE(
+                        cpu->address_bus = cpu->PC;
+                        cpu->mem_read();
+                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                            cpu->PC += 0x0100;
+                        }
+                    );
+                } 
+
+                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+            );
         }
     );
 // *INDENT-ON*
 }
 
-void MOS6502::BPL() {   // DONE
+void MOS6502::BPL() {
+    // TICK(1): Fetch opcode, increment PC
+
 // *INDENT-OFF*
+    // TICK(2): Fetch operand, increment PC
     MICROCODE(
-        if (cpu->read_flag(MOS6502::N) == false) {
-            /* cycles++; */
+        cpu->address_bus = cpu->PC++;
+        cpu->mem_read();
+        cpu->lo = cpu->data_bus;
 
-            cpu->address_bus = cpu->PC + cpu->relative_adderess;
-            /*
-            if ((address & 0xFF00) != (PC & 0xFF00)) {
-                cycles++;
-            }
-            */
+        /* if no branch taken just go with other instruction */ 
+        if (cpu->read_flag(N) == false) {
+           /* Branch Taken */
 
-            cpu->PC = cpu->address_bus;
+            // TICK(3): If branch is taken, add operand to PCL.
+            cpu->MICROCODE(
+                /* Read the memory after the instruction */
+                cpu->address_bus = cpu->PC;
+                cpu->mem_read();
+
+                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+
+                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                    // TICK(4): Fix PCH. If it did not change, increment PC.
+                    cpu->MICROCODE(
+                        cpu->address_bus = cpu->PC;
+                        cpu->mem_read();
+
+                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                            cpu->PC += 0x0100;
+                        }
+                    );
+                } 
+
+                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+            );
         }
     );
 // *INDENT-ON*
@@ -732,39 +864,83 @@ void MOS6502::BRK() {
     );
 }
 
-void MOS6502::BVC() {   // DONE
+void MOS6502::BVC() {
+    // TICK(1): Fetch opcode, increment PC
+
 // *INDENT-OFF*
+    // TICK(2): Fetch operand, increment PC
     MICROCODE(
-        if (cpu->read_flag(MOS6502::O) == false) {
-            /* cycles++; */
+        cpu->address_bus = cpu->PC++;
+        cpu->mem_read();
+        cpu->lo = cpu->data_bus;
 
-            cpu->address_bus = cpu->PC + cpu->relative_adderess;
-            /*
-            if ((address & 0xFF00) != (PC & 0xFF00)) {
-                cycles++;
-            }
-            */
+        /* if no branch taken just go with other instruction */ 
+        if (cpu->read_flag(O) == false) {
+           /* Branch Taken */
 
-            cpu->PC = cpu->address_bus;
+            // TICK(3): If branch is taken, add operand to PCL.
+            cpu->MICROCODE(
+                /* Read the memory after the instruction */
+                cpu->address_bus = cpu->PC;
+                cpu->mem_read();
+
+                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+
+                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                    // TICK(4): Fix PCH. If it did not change, increment PC.
+                    cpu->MICROCODE(
+                        cpu->address_bus = cpu->PC;
+                        cpu->mem_read();
+
+                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                            cpu->PC += 0x0100;
+                        }
+                    );
+                } 
+
+                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+            );
         }
     );
 // *INDENT-ON*
 }
 
-void MOS6502::BVS() {   // DONE
+void MOS6502::BVS() {
+    // TICK(1): Fetch opcode, increment PC
+
 // *INDENT-OFF*
+    // TICK(2): Fetch operand, increment PC
     MICROCODE(
-        if (cpu->read_flag(MOS6502::O)) {
-            /* cycles++; */
+        cpu->address_bus = cpu->PC++;
+        cpu->mem_read();
+        cpu->lo = cpu->data_bus;
 
-            cpu->address_bus = cpu->PC + cpu->relative_adderess;
-            /*
-            if ((address & 0xFF00) != (PC & 0xFF00)) {
-                cycles++;
-            }
-            */
+        /* if no branch taken just go with other instruction */ 
+        if (cpu->read_flag(O)) {
+           /* Branch Taken */
 
-            cpu->PC = cpu->address_bus;
+            // TICK(3): If branch is taken, add operand to PCL.
+            cpu->MICROCODE(
+                /* Read the memory after the instruction */
+                cpu->address_bus = cpu->PC;
+                cpu->mem_read();
+
+                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+
+                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                    // TICK(4): Fix PCH. If it did not change, increment PC.
+                    cpu->MICROCODE(
+                        cpu->address_bus = cpu->PC;
+                        cpu->mem_read();
+
+                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                            cpu->PC += 0x0100;
+                        }
+                    );
+                } 
+
+                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+            );
         }
     );
 // *INDENT-ON*

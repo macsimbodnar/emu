@@ -93,7 +93,7 @@ class MOS6502 {
     uint16_t hi;
     uint16_t lo;
     bool skip_mem_read = false;                   // Read instructions in Absolute indexed addressing mode can skip
-    //                                               the second read if no page_crossing happened   
+    //                                               the second read if no page_crossing happened
     uint32_t cycles = 0;
 
     // The vector containing the opcode and addressing fuctions and info.

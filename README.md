@@ -87,6 +87,7 @@ The **EMU** is case insensitive for now
 
 ### Now
 
+* Check if the sum (with carry/borrow) is done correctly inside Branching instructions (BCC, BCS, BNE, BEQ, BPL, BMI, BVC, BVS)
 * Replace tmp_buff uint16_t with tmp_h and tmp_l uint8_t
 * Rewrite all casts from C style to static_cast C++ like
 * Fix the Immediate addressing
