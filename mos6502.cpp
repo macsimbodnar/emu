@@ -401,36 +401,33 @@ void MOS6502::REL() {
 }
 
 void MOS6502::IIX() {   // DONE
+    // TICK(1): Fetch opcode, increment PC
 
-    // TODO(max): fix, use only tmp
-    // address = PC++;
-    // mem_read();
-    // address = ((uint16_t)data_bus + (uint16_t)X) & 0x00FF;
-    // mem_read();
-    // tmp_buff = data_bus & 0x00FF;
-    // address++;
-    // mem_read();
-    // address = ((((uint16_t)data_bus) << 8) & 0xFF00) | tmp_buff;
+    // TICK(2): Fetch pointer address, increment PC
     MICROCODE(
         cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->tmp_buff = cpu->data_bus;
-
-        cpu->address_bus = (uint16_t)(cpu->tmp_buff + (uint16_t)cpu->X) & 0x00FF;
+        cpu->lo = cpu->data_bus;
     );
 
+    // TICK(3): Read from the address, add X to it
+    MICROCODE(
+        cpu->address_bus = static_cast<uint16_t>(cpu->lo) & 0x00FF;
+        cpu->mem_read();
+        cpu->address_bus = (cpu->lo + cpu->X) & 0x00FF; /* No page crossing, discarding the carry */
+    );
+
+    // TICK(3): Fetch effective address low
     MICROCODE(
         cpu->mem_read();
         cpu->lo = cpu->data_bus;
-
-        cpu->address_bus = (uint16_t)(cpu->tmp_buff + (uint16_t)cpu->X + 1) & 0x00FF;
     );
 
+    // TICK(4): Fetch effective address high
     MICROCODE(
+        cpu->address_bus = (cpu->address_bus + 1) & 0x00FF; /* No page crossing */
         cpu->mem_read();
-        cpu->hi = cpu->data_bus;
-
-        cpu->address_bus = (cpu->hi << 8) | cpu->lo;
+        cpu->address_bus = ADDRESS(cpu->data_bus, cpu->lo);
     );
 }
 
