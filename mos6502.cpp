@@ -1,6 +1,7 @@
 #include "mos6502.hpp"
 
 #define MICROCODE(code) microcode_q.enqueue(([](MOS6502 * cpu) -> void { code }))
+#define MICROCODE_IN_FRONT(code) microcode_q.insert_in_front(([](MOS6502 * cpu) -> void { code }))
 #define ADDRESS(hi, lo) (static_cast<uint16_t>((static_cast<uint16_t>(hi) << 8) | (lo)))
 // #define ADDRESS(hi, lo) (static_cast<uint16_t>(256U * hi + lo))
 #define ADD_LO_NO_CARRY(address, lo) (static_cast<uint16_t>(((address) & 0xFF00) | (static_cast<uint16_t>((address) + (lo)) & 0x00FF)))
@@ -400,7 +401,7 @@ void MOS6502::REL() {
     asm("nop");
 }
 
-void MOS6502::IIX() {   // DONE
+void MOS6502::IIX() {
     // TICK(1): Fetch opcode, increment PC
 
     // TICK(2): Fetch pointer address, increment PC
@@ -431,48 +432,44 @@ void MOS6502::IIX() {   // DONE
     );
 }
 
-void MOS6502::IIY() {   // DONE
-    // TODO(max): fix this with tmp only
-    // address = PC++;
-    // mem_read();
-    // address = data_bus & 0x00FF;
-    // mem_read();
-    // tmp_buff = data_bus & 0x00FF;
-    // address++;
-    // mem_read();
-    // address = (((((uint16_t)data_bus) << 8) & 0xFF00) | tmp_buff) + Y;
+void MOS6502::IIY() {
+    // TICK(1): Fetch opcode, increment PC
 
-    // if ((address & 0xFF00) != (((uint16_t)data_bus) << 8)) {
-    //     return true;
-    // }
+    // TICK(2): Fetch pointer address, increment PC
     MICROCODE(
         cpu->address_bus = cpu->PC++;
         cpu->mem_read();
-        cpu->tmp_buff = cpu->data_bus;
-
-        cpu->address_bus = cpu->tmp_buff & 0x00FF;
     );
 
+    // TICK(3): Fetch effective address low
     MICROCODE(
+        cpu->address_bus = static_cast<uint16_t>(cpu->data_bus) & 0x00FF;
         cpu->mem_read();
         cpu->lo = cpu->data_bus;
-
-        cpu->address_bus = (cpu->tmp_buff + 1) & 0x00FF;
     );
 
+// *INDENT-OFF*
+    // TICK(4): Fetch effective address high, add Y to low byte of effective address
     MICROCODE(
+        /* The effective address is always fetched from zero page */
+        cpu->address_bus = (cpu->address_bus + 1) & 0x00FF; /* No page crossing */
         cpu->mem_read();
         cpu->hi = cpu->data_bus;
 
-        cpu->address_bus = (cpu->hi << 8) | cpu->lo;
-        cpu->address_bus += cpu->Y;
+        cpu->tmp_buff = static_cast<uint16_t>(cpu->lo) + cpu->Y;
+
+        if (cpu->tmp_buff & 0xFF00) {   /* Page was crossed */
+            // This cycle will be executed only if boundary was crossed
+            // TICK(5): Read from effective address, fix high byte of effective address
+            cpu->MICROCODE_IN_FRONT(
+                cpu->mem_read();
+                cpu->address_bus += 0x0100;
+            );
+        }
+
+        cpu->address_bus = ADDRESS(cpu->hi, cpu->tmp_buff & 0x00FF);
     );
-    // if ((address & 0xFF00) != (hi << 8)) {
-    // TODO() fix this with reasonable code
-    //     MICROCODE(
-    //         asm("nop");
-    //     );
-    // }
+// *INDENT-ON*
 }
 
 void MOS6502::IND() {

@@ -215,6 +215,101 @@ TEST_CASE("Cycles Timing Test") {
 }
 
 
+TEST_CASE("Queue Test") {
+    Queue<int, 10> q;
+
+    REQUIRE_FALSE(q.is_full());
+    REQUIRE(q.is_empty());
+
+    for (int i = 0; i < 10; i++) {
+        REQUIRE_FALSE(q.is_full());
+        REQUIRE(q.enqueue(i));
+        REQUIRE_FALSE(q.is_empty());
+    }
+
+    REQUIRE(q.is_full());
+    int tmp;
+    REQUIRE(q.front(tmp));
+    REQUIRE_EQ(tmp, 0);
+
+    REQUIRE(q.rear(tmp));
+    REQUIRE_EQ(tmp, 9);
+
+    for (int i = 0; i < 10; i++) {
+        int elem;
+        REQUIRE(q.dequeue(elem));
+        REQUIRE_EQ(i, elem);
+        REQUIRE_FALSE(q.is_full());
+    }
+
+    for (int i = 0; i < 10; i++) {
+        REQUIRE_FALSE(q.is_full());
+        REQUIRE(q.enqueue(i));
+        REQUIRE_FALSE(q.is_empty());
+    }
+
+    REQUIRE(q.is_full());
+    q.clear();
+    REQUIRE_FALSE(q.is_full());
+    REQUIRE(q.is_empty());
+
+    for (int i = 0; i < 9; i++) {
+        REQUIRE_FALSE(q.is_full());
+        REQUIRE(q.enqueue(i));
+        REQUIRE_FALSE(q.is_empty());
+    }
+
+    REQUIRE_FALSE(q.is_full());
+
+    REQUIRE(q.insert_in_front(42));
+
+    REQUIRE(q.is_full());
+
+    REQUIRE(q.front(tmp));
+    REQUIRE_EQ(42, tmp);
+
+    REQUIRE(q.rear(tmp));
+    REQUIRE_EQ(8, tmp);
+
+    REQUIRE(q.dequeue(tmp));
+    REQUIRE_EQ(42, tmp);
+
+    for (int i = 0; i < 9; i++) {
+        int elem;
+        REQUIRE(q.dequeue(elem));
+        REQUIRE_EQ(i, elem);
+        REQUIRE_FALSE(q.is_full());
+    }
+
+    REQUIRE(q.is_empty());
+
+    for (int i = 0; i < 5; i++) {
+        REQUIRE_FALSE(q.is_full());
+        REQUIRE(q.enqueue(i));
+        REQUIRE_FALSE(q.is_empty());
+    }
+
+    REQUIRE(q.insert_in_front(42));
+
+    REQUIRE_FALSE(q.is_full());
+
+    REQUIRE(q.front(tmp));
+    REQUIRE_EQ(42, tmp);
+
+    REQUIRE(q.rear(tmp));
+    REQUIRE_EQ(4, tmp);
+
+    REQUIRE(q.dequeue(tmp));
+    REQUIRE_EQ(42, tmp);
+
+    for (int i = 0; i < 4; i++) {
+        int elem;
+        REQUIRE(q.dequeue(elem));
+        REQUIRE_EQ(i, elem);
+        REQUIRE_FALSE(q.is_full());
+    }
+}
+
 static void log_clb(const std::string &log) {
     printf("%s\n", log.c_str());
 }

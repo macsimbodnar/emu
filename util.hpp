@@ -33,6 +33,18 @@ class Queue {
         return (m_size == 0);
     }
 
+
+    inline bool insert_in_front(const T &elem) {
+        if (is_full()) {
+            return false;
+        }
+
+        m_front = (m_front + m_capacity - 1) % m_capacity;
+        m_memory[m_front] = elem;
+        m_size++;
+        return true;
+    }
+
     inline bool enqueue(const T &elem) {
         if (is_full()) {
             return false;

@@ -92,7 +92,6 @@ The **EMU** is case insensitive for now
 * Rewrite all casts from C style to static_cast C++ like
 * Fix the Immediate addressing
 * Test BRK instruction
-* Test the Queue Class
 * Check the timing of the composed illegal opcodes
 * Implement decimal mode
 * Make processor cycle precise (each clock tick should change the inner status of the processor like in this [simulator](http://www.visual6502.org/JSSim/index.html))
