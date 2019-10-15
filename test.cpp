@@ -212,8 +212,20 @@ TEST_CASE("Cycles Timing Test") {
 
     fclose(file);
 
+    p_state_t curr_state;
+    while(true) {
+        cpu.clock();
+        curr_state = cpu.get_status();
+
+        if (curr_state.PC >= 1269 || curr_state.tot_cycles > 2000) {
+            break;
+        }
+    }
+
+    REQUIRE_EQ(curr_state.tot_cycles, 1141);
+
     // TODO(max): Write the tests
-    // On visual6502 it takes 1141 cycles
+    // On visual6502 it takes 1141 cycles, PC should be in 1269 dec
 }
 
 

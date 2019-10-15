@@ -1319,7 +1319,7 @@ void MOS6502::LSR() {
 
 void MOS6502::NOP() {
     // TODO(max): fix the nop
-    microcode_q.clear();
+
 // *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
