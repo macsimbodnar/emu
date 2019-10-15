@@ -233,7 +233,7 @@ void MOS6502::ACC() {
     accumulator_addressing = true;
 }
 
-void MOS6502::IMM() {   // DONE
+void MOS6502::IMM() {
     // TICK(1): Fetch opcode, increment PC
 
     // TODO(max): The PC should be incremented at the same cycle that the mem_read!
@@ -385,7 +385,7 @@ void MOS6502::ABY() {
 // *INDENT-ON*
 }
 
-void MOS6502::IMP() {   // DONE
+void MOS6502::IMP() {
     // TICK(1): Fetch opcode, increment PC
 
     // TICK(2): Read next instruction byte (and throw it away)
@@ -807,7 +807,7 @@ void MOS6502::BPL() {
 
 void MOS6502::BRK() {
     // NOTE(max):   Clear the microcode_q because in this case the
-    //              immediate addressing mode is different
+    //              implied addressing mode is different
     microcode_q.clear();
 
     // TICK(1): Fetch opcode, increment PC
@@ -940,26 +940,54 @@ void MOS6502::BVS() {
 // *INDENT-ON*
 }
 
-void MOS6502::CLC() {   // DONE
+void MOS6502::CLC() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->set_flag(MOS6502::C, false);
     );
 }
 
-void MOS6502::CLD() {   //DONE
+void MOS6502::CLD() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->set_flag(MOS6502::D, false);
     );
 }
 
-void MOS6502::CLI() {   // DONE
+void MOS6502::CLI() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->set_flag(MOS6502::I, false);
     );
 }
 
-void MOS6502::CLV() {   // DONE
+void MOS6502::CLV() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->set_flag(MOS6502::O, false);
     );
 }
@@ -979,7 +1007,8 @@ void MOS6502::CMP() {
 // *INDENT-ON*
 }
 
-void MOS6502::CPX() {   // DONE
+void MOS6502::CPX() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
         cpu->tmp_buff = (uint16_t)cpu->X - (uint16_t)cpu->data_bus;
@@ -989,7 +1018,8 @@ void MOS6502::CPX() {   // DONE
     );
 }
 
-void MOS6502::CPY() {   // DONE
+void MOS6502::CPY() {
+    // TICK(A + 1): Read from effective address
     MICROCODE(
         cpu->mem_read();
         cpu->tmp_buff = (uint16_t)cpu->Y - (uint16_t)cpu->data_bus;
@@ -1021,16 +1051,30 @@ void MOS6502::DEC() {
     );
 }
 
-void MOS6502::DEX() {   // DONE
+void MOS6502::DEX() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->X--;
         cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
         cpu->set_flag(MOS6502::N, cpu->X & 0x80);
     );
 }
 
-void MOS6502::DEY() {   // DONE
+void MOS6502::DEY() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->Y--;
         cpu->set_flag(MOS6502::Z, cpu->Y == 0x00);
         cpu->set_flag(MOS6502::N, cpu->Y & 0x80);
@@ -1073,16 +1117,30 @@ void MOS6502::INC() {
     );
 }
 
-void MOS6502::INX() {   // DONE
+void MOS6502::INX() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->X++;
         cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
         cpu->set_flag(MOS6502::N, cpu->X & 0x80);
     );
 }
 
-void MOS6502::INY() {   // DONE
+void MOS6502::INY() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->Y++;
         cpu->set_flag(MOS6502::Z, cpu->Y == 0x00);
         cpu->set_flag(MOS6502::N, cpu->Y & 0x80);
@@ -1261,7 +1319,7 @@ void MOS6502::LSR() {
 
 void MOS6502::NOP() {
     // TODO(max): fix the nop
-
+    microcode_q.clear();
 // *INDENT-OFF*
     // TICK(A + 1): Read from effective address
     MICROCODE(
@@ -1473,20 +1531,41 @@ void MOS6502::SBC() {
 // *INDENT-ON*
 }
 
-void MOS6502::SEC() {   // DONE
+void MOS6502::SEC() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->set_flag(MOS6502::C, true);
     );
 }
 
-void MOS6502::SED() {   // DONE
+void MOS6502::SED() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->set_flag(D, true);
     );
 }
 
-void MOS6502::SEI() {   // DON
+void MOS6502::SEI() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->set_flag(I, true);
     );
 }
@@ -1515,46 +1594,88 @@ void MOS6502::STY() {
     );
 }
 
-void MOS6502::TAX() {   // DONE
+void MOS6502::TAX() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->X = cpu->A;
         cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
         cpu->set_flag(MOS6502::N, cpu->X & 0x80);
     );
 }
 
-void MOS6502::TAY() {   // DONE
+void MOS6502::TAY() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->Y = cpu->A;
         cpu->set_flag(MOS6502::Z, cpu->Y == 0x00);
         cpu->set_flag(MOS6502::N, cpu->Y & 0x80);
     );
 }
 
-void MOS6502::TSX() {   // DONE
+void MOS6502::TSX() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->X = cpu->S;
         cpu->set_flag(MOS6502::Z, cpu->X == 0x00);
         cpu->set_flag(MOS6502::N, cpu->X & 0x80);
     );
 }
 
-void MOS6502::TXA() {   // DONE
+void MOS6502::TXA() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->A = cpu->X;
         cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
         cpu->set_flag(MOS6502::N, cpu->A & 0x80);
     );
 }
 
-void MOS6502::TXS() {   // DONE
+void MOS6502::TXS() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->S = cpu->X;
     );
 }
 
 void MOS6502::TYA() {
+    microcode_q.clear();
+
+    // TICK(1): Fetch opcode, increment PC
+
+    // TICK(2): Read next instruction byte (and throw it away)
     MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
         cpu->A = cpu->Y;
         cpu->set_flag(MOS6502::Z, cpu->A == 0x00);
         cpu->set_flag(MOS6502::N, cpu->A & 0x80);

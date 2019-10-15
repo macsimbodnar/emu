@@ -152,6 +152,8 @@ TEST_CASE("NES Test") {
             // if (cmp_res != 0) {
             //     printf("CYCLES COUNT Missmatch on iteration %d\n%s\n", iteration, line);
             // }
+
+            // REQUIRE_EQ(cmp_res, 0);
         }
 
     }
