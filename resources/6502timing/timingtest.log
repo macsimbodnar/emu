@@ -1,8 +1,9 @@
 6502 free running...
 Ex Breakpoint hit at 1000
-04.784805: 1000 : LDX #FF     
 >> s299
 Stepping 299 instructions
+
+04.784805: 1000 : LDX #FF     
 04.784807: 1002 : TXS         
 04.784809: 1003 : LDX #01     
 04.784811: 1005 : STX 17     

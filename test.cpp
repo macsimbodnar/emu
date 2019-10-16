@@ -22,7 +22,11 @@
 #define NES_RAM                 2048
 
 #define TIMING_TEST_BIN         "resources/6502timing/timingtest.bin"
-#define TIMINT_TEST_MEM_LOC     0x1000
+#define TIMING_TEST_LOG_FILE    "resources/6502timing/timingtest.log"
+#define TIMING_TEST_MEM_LOC     0x1000
+#define TIMING_TEST_PC_END      0x1269
+// On visual6502 it takes 1141 cycles, PC should be in 1269 hex
+#define TIMING_TEST_TOT_CYCLES  1141
 
 // iNES Format Header
 struct ines_header_t {
@@ -189,10 +193,11 @@ TEST_CASE("Cycles Timing Test") {
 
     // Reset the cpu before use and set the Program Counter to specific mem addres in order to perfrom all tests
     cpu.reset();
+    cpu.set_PC(TIMING_TEST_MEM_LOC);
 
     // The code starts from 0x1000
-    mem[0xFFFC] = (uint8_t) TIMINT_TEST_MEM_LOC & 0x00FF;                       // Set the reset Vector ll
-    mem[0xFFFD] = (uint8_t)(TIMINT_TEST_MEM_LOC >> 8) & 0x00FF;                 // Set the reset Vector hh
+    mem[0xFFFC] = (uint8_t)TIMING_TEST_MEM_LOC & 0x00FF;                       // Set the reset Vector ll
+    mem[0xFFFD] = (uint8_t)(TIMING_TEST_MEM_LOC >> 8) & 0x00FF;                 // Set the reset Vector hh
 
     // NOTE(max):   Using the srec from this discussion http://forum.6502.org/viewtopic.php?f=8&t=3340
     //              Loaded at address $1000
@@ -207,25 +212,64 @@ TEST_CASE("Cycles Timing Test") {
     fseek(file, 0, SEEK_SET);
 
     // Load the code in mem
-    size_t read = fread(mem + TIMINT_TEST_MEM_LOC, sizeof(uint8_t), size, file);
+    size_t read = fread(mem + TIMING_TEST_MEM_LOC, sizeof(uint8_t), size, file);
     REQUIRE_EQ(read, size);
 
     fclose(file);
 
-    p_state_t curr_state;
-    while(true) {
-        cpu.clock();
-        curr_state = cpu.get_status();
+    // Open the log file used to check the correct cpu behavior
+    std::ifstream log_file(TIMING_TEST_LOG_FILE);
+    REQUIRE(log_file);
+    char line[150];
 
-        if (curr_state.PC >= 1269 || curr_state.tot_cycles > 2000) {
-            break;
+    for (int i = 0; i < 5; i++) {
+        // Consume first 5 lines
+        log_file.getline(line, 255);
+    }
+
+    p_state_t curr_state;
+    char state_log[150];
+    int iteration = 0;
+    int cmp_res;
+
+    while (log_file) {
+        // Read log file line by line
+        log_file.getline(line, 255);
+
+        if (log_file) {
+            iteration++;
+
+            while (!cpu.clock()) {};
+
+            curr_state = cpu.get_status();
+
+            build_log_str(state_log, curr_state);
+
+            // Compare PC
+            cmp_res = memcmp(line + 11, state_log, 4);
+
+            printf("%s\n", state_log);
+
+            if (cmp_res != 0) {
+                printf("PC Missmatch on iteration %d\n%s\n", iteration, line);
+            }
+
+            REQUIRE_EQ(cmp_res, 0);
+
+            // Compare MNEMONIC INSTRUCTION
+            cmp_res = memcmp(line + 18, state_log + 16, 3);
+
+            printf("%s\n", state_log);
+
+            if (cmp_res != 0) {
+                printf("INSTRUCTION Missmatch on iteration %d\n%s\n", iteration, line);
+            }
+
+            REQUIRE_EQ(cmp_res, 0);
         }
     }
 
-    REQUIRE_EQ(curr_state.tot_cycles, 1141);
-
-    // TODO(max): Write the tests
-    // On visual6502 it takes 1141 cycles, PC should be in 1269 dec
+    log_file.close();
 }
 
 
