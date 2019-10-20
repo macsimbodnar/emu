@@ -270,6 +270,10 @@ TEST_CASE("Cycles Timing Test") {
     }
 
     log_file.close();
+
+    // Compare the cycles number
+    curr_state = cpu.get_status();
+    printf("%d\n", curr_state.tot_cycles);
 }
 
 

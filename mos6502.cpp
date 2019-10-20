@@ -4,8 +4,8 @@
 #define MICROCODE_IN_FRONT(code) microcode_q.insert_in_front(([](MOS6502 * cpu) -> void { code }))
 #define ADDRESS(hi, lo) (static_cast<uint16_t>((static_cast<uint16_t>(hi) << 8) | (lo)))
 // #define ADDRESS(hi, lo) (static_cast<uint16_t>(256U * hi + lo))
-#define ADD_LO_NO_CARRY(address, lo) (static_cast<uint16_t>(((address) & 0xFF00) | (static_cast<uint16_t>((address) + (lo)) & 0x00FF)))
-
+// Combine the high bits of first argument with low bits of second argument
+#define COMBINE(hi, lo) ((hi & 0x00FF) | (lo & 0xFF00))
 
 
 MOS6502::MOS6502(mem_access_callback mem_acc_clb, void *usr_data) :
@@ -564,21 +564,24 @@ void MOS6502::BCC() {
                 cpu->address_bus = cpu->PC;
                 cpu->mem_read();
 
-                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+                cpu->tmp_buff = cpu->PC + static_cast<int8_t>(cpu->lo);
 
-                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                if ((cpu->tmp_buff & 0xFF00) != (cpu->PC & 0xFF00)) { /* page crossing */
                     // TICK(4): Fix PCH. If it did not change, increment PC.
                     cpu->MICROCODE(
                         cpu->address_bus = cpu->PC;
                         cpu->mem_read();
 
-                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                        if (cpu->lo & 0x80) {   /* if relative_adderess >= 128 */
+                            cpu->PC -= 0x0100;
+                        } else {
                             cpu->PC += 0x0100;
                         }
                     );
                 } 
 
-                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+                /* Set the low bits*/
+                cpu->PC = COMBINE(cpu->tmp_buff, cpu->PC);
             );
         }
     );
@@ -605,21 +608,24 @@ void MOS6502::BCS() {
                 cpu->address_bus = cpu->PC;
                 cpu->mem_read();
 
-                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+                cpu->tmp_buff = cpu->PC + static_cast<int8_t>(cpu->lo);
 
-                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                if ((cpu->tmp_buff & 0xFF00) != (cpu->PC & 0xFF00)) { /* page crossing */
                     // TICK(4): Fix PCH. If it did not change, increment PC.
                     cpu->MICROCODE(
                         cpu->address_bus = cpu->PC;
                         cpu->mem_read();
 
-                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                        if (cpu->lo & 0x80) {   /* if relative_adderess >= 128 */
+                            cpu->PC -= 0x0100;
+                        } else {
                             cpu->PC += 0x0100;
                         }
                     );
                 } 
 
-                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+                /* Set the low bits*/
+                cpu->PC = COMBINE(cpu->tmp_buff, cpu->PC);
             );
         }
     );
@@ -646,21 +652,24 @@ void MOS6502::BEQ() {
                 cpu->address_bus = cpu->PC;
                 cpu->mem_read();
 
-                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+                cpu->tmp_buff = cpu->PC + static_cast<int8_t>(cpu->lo);
 
-                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                if ((cpu->tmp_buff & 0xFF00) != (cpu->PC & 0xFF00)) { /* page crossing */
                     // TICK(4): Fix PCH. If it did not change, increment PC.
                     cpu->MICROCODE(
                         cpu->address_bus = cpu->PC;
                         cpu->mem_read();
 
-                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                        if (cpu->lo & 0x80) {   /* if relative_adderess >= 128 */
+                            cpu->PC -= 0x0100;
+                        } else {
                             cpu->PC += 0x0100;
                         }
                     );
                 } 
 
-                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+                /* Set the low bits*/
+                cpu->PC = COMBINE(cpu->tmp_buff, cpu->PC);
             );
         }
     );
@@ -703,21 +712,24 @@ void MOS6502::BMI() {
                 cpu->address_bus = cpu->PC;
                 cpu->mem_read();
 
-                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+                cpu->tmp_buff = cpu->PC + static_cast<int8_t>(cpu->lo);
 
-                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                if ((cpu->tmp_buff & 0xFF00) != (cpu->PC & 0xFF00)) { /* page crossing */
                     // TICK(4): Fix PCH. If it did not change, increment PC.
                     cpu->MICROCODE(
                         cpu->address_bus = cpu->PC;
                         cpu->mem_read();
 
-                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                        if (cpu->lo & 0x80) {   /* if relative_adderess >= 128 */
+                            cpu->PC -= 0x0100;
+                        } else {
                             cpu->PC += 0x0100;
                         }
                     );
                 } 
 
-                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+                /* Set the low bits*/
+                cpu->PC = COMBINE(cpu->tmp_buff, cpu->PC);
             );
         }
     );
@@ -744,20 +756,24 @@ void MOS6502::BNE() {
                 cpu->address_bus = cpu->PC;
                 cpu->mem_read();
 
-                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+                cpu->tmp_buff = cpu->PC + static_cast<int8_t>(cpu->lo);
 
-                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                if ((cpu->tmp_buff & 0xFF00) != (cpu->PC & 0xFF00)) { /* page crossing */
                     // TICK(4): Fix PCH. If it did not change, increment PC.
                     cpu->MICROCODE(
                         cpu->address_bus = cpu->PC;
                         cpu->mem_read();
-                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+
+                        if (cpu->lo & 0x80) {   /* if relative_adderess >= 128 */
+                            cpu->PC -= 0x0100;
+                        } else {
                             cpu->PC += 0x0100;
                         }
                     );
                 } 
 
-                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+                /* Set the low bits*/
+                cpu->PC = COMBINE(cpu->tmp_buff, cpu->PC);
             );
         }
     );
@@ -784,21 +800,24 @@ void MOS6502::BPL() {
                 cpu->address_bus = cpu->PC;
                 cpu->mem_read();
 
-                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+                cpu->tmp_buff = cpu->PC + static_cast<int8_t>(cpu->lo);
 
-                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                if ((cpu->tmp_buff & 0xFF00) != (cpu->PC & 0xFF00)) { /* page crossing */
                     // TICK(4): Fix PCH. If it did not change, increment PC.
                     cpu->MICROCODE(
                         cpu->address_bus = cpu->PC;
                         cpu->mem_read();
 
-                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                        if (cpu->lo & 0x80) {   /* if relative_adderess >= 128 */
+                            cpu->PC -= 0x0100;
+                        } else {
                             cpu->PC += 0x0100;
                         }
                     );
                 } 
 
-                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+                /* Set the low bits*/
+                cpu->PC = COMBINE(cpu->tmp_buff, cpu->PC);
             );
         }
     );
@@ -878,21 +897,24 @@ void MOS6502::BVC() {
                 cpu->address_bus = cpu->PC;
                 cpu->mem_read();
 
-                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+                cpu->tmp_buff = cpu->PC + static_cast<int8_t>(cpu->lo);
 
-                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                if ((cpu->tmp_buff & 0xFF00) != (cpu->PC & 0xFF00)) { /* page crossing */
                     // TICK(4): Fix PCH. If it did not change, increment PC.
                     cpu->MICROCODE(
                         cpu->address_bus = cpu->PC;
                         cpu->mem_read();
 
-                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                        if (cpu->lo & 0x80) {   /* if relative_adderess >= 128 */
+                            cpu->PC -= 0x0100;
+                        } else {
                             cpu->PC += 0x0100;
                         }
                     );
                 } 
 
-                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+                /* Set the low bits*/
+                cpu->PC = COMBINE(cpu->tmp_buff, cpu->PC);
             );
         }
     );
@@ -919,21 +941,24 @@ void MOS6502::BVS() {
                 cpu->address_bus = cpu->PC;
                 cpu->mem_read();
 
-                cpu->tmp_buff = (cpu->PC & 0x00FF) + cpu->lo;
+                cpu->tmp_buff = cpu->PC + static_cast<int8_t>(cpu->lo);
 
-                if (cpu->tmp_buff & 0xFF00) { /* page crossing */
+                if ((cpu->tmp_buff & 0xFF00) != (cpu->PC & 0xFF00)) { /* page crossing */
                     // TICK(4): Fix PCH. If it did not change, increment PC.
                     cpu->MICROCODE(
                         cpu->address_bus = cpu->PC;
                         cpu->mem_read();
 
-                        if (!(cpu->lo & 0x80)) {   /* if relative_adderess >= 128 */
+                        if (cpu->lo & 0x80) {   /* if relative_adderess >= 128 */
+                            cpu->PC -= 0x0100;
+                        } else {
                             cpu->PC += 0x0100;
                         }
                     );
                 } 
 
-                cpu->PC = ADD_LO_NO_CARRY(cpu->PC, cpu->lo);
+                /* Set the low bits*/
+                cpu->PC = COMBINE(cpu->tmp_buff, cpu->PC);
             );
         }
     );
