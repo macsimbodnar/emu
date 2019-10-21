@@ -75,6 +75,14 @@ bool MOS6502::clock() {
         if (microcode_q.dequeue(micro_operation)) {
             // Exec the microcode
             micro_operation(this);
+
+            // Exec this cycle the next part of instruction if in abbsolute indexed
+            // addressing no cross page happened
+            if (exec_next_microcode_now) {
+                exec_next_microcode_now = false;
+                microcode_q.dequeue(micro_operation);
+                micro_operation(this);
+            }
         } else {
             log("Error dequeueing nex microcode instruction");
         }
@@ -336,7 +344,10 @@ void MOS6502::ABX() {
         cpu->mem_read();
 
         // Fix hi byte of address
-        if (!cpu->skip_mem_read) {   // If no page skip then need to fix the page cross
+        if (cpu->skip_mem_read) { 
+            cpu->exec_next_microcode_now = true;
+        } else {
+            // If no page skip then need to fix the page cross
             // TODO(max): The + 1 can be wrong, because the offset is signed so need to check
             cpu->address_bus = ADDRESS(cpu->hi + 1, cpu->lo);
         }
@@ -377,7 +388,10 @@ void MOS6502::ABY() {
         cpu->mem_read();
 
         // Fix hi byte of address
-        if (!cpu->skip_mem_read) {   // If no page skip then need to fix the page cross
+        if (cpu->skip_mem_read) { 
+            cpu->exec_next_microcode_now = true;
+        } else {
+            // If no page skip then need to fix the page cross
             // TODO(max): The + 1 can be wrong, because the offset is signed so need to check
             cpu->address_bus = ADDRESS(cpu->hi + 1, cpu->lo);
         }

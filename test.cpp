@@ -2,6 +2,7 @@
 #include <doctest.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "mos6502.hpp"
 #include "common.hpp"
@@ -227,10 +228,15 @@ TEST_CASE("Cycles Timing Test") {
         log_file.getline(line, 255);
     }
 
+    cpu.cycles = 2;
     p_state_t curr_state;
+    p_state_t old_state = cpu.get_status();
     char state_log[150];
     int iteration = 0;
     int cmp_res;
+    uint64_t last_expected_cyc = 784803;
+    uint64_t last_current_cyc = 0;
+    char *endptr;
 
     while (log_file) {
         // Read log file line by line
@@ -266,6 +272,22 @@ TEST_CASE("Cycles Timing Test") {
             }
 
             REQUIRE_EQ(cmp_res, 0);
+
+            // Compare cycles number
+            uint64_t tmp = strtoul(line + 3, &endptr, 10);
+            uint64_t expected_cyc = tmp - last_expected_cyc;
+            uint64_t current_cyc = old_state.tot_cycles - last_current_cyc;
+
+            if (expected_cyc != current_cyc) {
+                printf("CYCLE Missmatch on iteration %d\nExpect: %lu Current: %lu\n%s\n",
+                       iteration, expected_cyc, current_cyc, line);
+            }
+
+            REQUIRE_EQ(expected_cyc, current_cyc);
+
+            last_current_cyc = old_state.tot_cycles;
+            last_expected_cyc = tmp;
+            old_state = curr_state;
         }
     }
 
