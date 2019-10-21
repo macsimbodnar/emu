@@ -94,7 +94,7 @@ class MOS6502 {
     uint16_t lo;
     bool skip_mem_read = false;                   // Read instructions in Absolute indexed addressing mode can skip
     //                                               the second read if no page_crossing happened
-    bool exec_next_microcode_now = false;         // Use this to execute the next operation now. Used in abbsolute indexed (ABX, ABY) 
+    bool exec_next_microcode_now = false;         // Use this to execute the next operation now. Used in absolute indexed (ABX, ABY) 
     //                                               addressing mode if no page crossing happened
     uint32_t cycles = 0;
 

@@ -76,7 +76,7 @@ bool MOS6502::clock() {
             // Exec the microcode
             micro_operation(this);
 
-            // Exec this cycle the next part of instruction if in abbsolute indexed
+            // Exec this cycle the next part of instruction if in absolute indexed
             // addressing no cross page happened
             if (exec_next_microcode_now) {
                 exec_next_microcode_now = false;
