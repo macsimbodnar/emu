@@ -265,8 +265,6 @@ TEST_CASE("Cycles Timing Test") {
             // Compare MNEMONIC INSTRUCTION
             cmp_res = memcmp(line + 18, state_log + 16, 3);
 
-            printf("%s\n", state_log);
-
             if (cmp_res != 0) {
                 printf("INSTRUCTION Missmatch on iteration %d\n%s\n", iteration, line);
             }
