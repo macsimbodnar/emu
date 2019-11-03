@@ -82,6 +82,7 @@ class MOS6502 {
     void *user_data = nullptr;                    // User passed like first argument to the mem_access
 
     uint8_t opcode;                               // Current opcode
+    const instruction_t *instruction;                   // Current instruction
     uint8_t data_bus;                             // Data currently on the bus
     uint16_t address_bus = INITIAL_ADDRESS;       // Current abbsolute address
     uint16_t relative_adderess;                   // Current abbsolute address
@@ -92,10 +93,6 @@ class MOS6502 {
     uint16_t tmp_buff;                            // Temporary 16-bit buffer
     uint16_t hi;
     uint16_t lo;
-    bool skip_mem_read = false;                   // Read instructions in Absolute indexed addressing mode can skip
-    //                                               the second read if no page_crossing happened
-    bool exec_next_microcode_now = false;         // Use this to execute the next operation now. Used in absolute indexed (ABX, ABY) 
-    //                                               addressing mode if no page crossing happened
     uint32_t cycles = 0;
 
     // The vector containing the opcode and addressing fuctions and info.
@@ -119,6 +116,8 @@ class MOS6502 {
     bool read_flag(const status_flag_t flag);
     void mem_read();
     void mem_write();
+
+    bool is_read_instruction();
 
   public:
     void log(const std::string &msg);
