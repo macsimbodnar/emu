@@ -70,14 +70,20 @@ bool MOS6502::clock() {
         (this->*instruction->operation)();
 
     } else {                        // Execute next microcode step
-        micro_op_t micro_operation;
 
-        if (microcode_q.dequeue(micro_operation)) {
-            // Exec the microcode
-            micro_operation(this);
-        } else {
-            log("Error dequeueing nex microcode instruction");
-        }
+        // if we are in accumulator addressing mode we read from accumulator
+        // and not from memory so all reads and writes can be executed now
+        do {
+            micro_op_t micro_operation;
+
+            if (microcode_q.dequeue(micro_operation)) {
+                // Exec the microcode
+                micro_operation(this);
+            } else {
+                log("Error dequeueing nex microcode instruction");
+            }
+
+        } while (!microcode_q.is_empty() && accumulator_addressing);
     }
 
     // TEST
@@ -246,9 +252,9 @@ void MOS6502::ACC() {
     MICROCODE(
         cpu->address_bus = cpu->PC + 1;
         cpu->mem_read();
+        // Make mem read and write not from memory but from accumulator register
+        cpu->accumulator_addressing = true;
     );
-
-    accumulator_addressing = true;
 }
 
 void MOS6502::IMM() {
@@ -358,9 +364,11 @@ void MOS6502::ABX() {
                  */
 
                 // Exec immediately the next instruction
-                micro_op_t micro_operation;
-                cpu->microcode_q.dequeue(micro_operation);
-                micro_operation(cpu);
+                if (!cpu->microcode_q.is_empty()) {
+                    micro_op_t micro_operation;
+                    cpu->microcode_q.dequeue(micro_operation);
+                    micro_operation(cpu);
+                }
             } else {
                 cpu->mem_read();
             }
@@ -406,9 +414,11 @@ void MOS6502::ABY() {
                  */
 
                 // Exec immediately the next instruction
-                micro_op_t micro_operation;
-                cpu->microcode_q.dequeue(micro_operation);
-                micro_operation(cpu);
+                if (!cpu->microcode_q.is_empty()) {
+                    micro_op_t micro_operation;
+                    cpu->microcode_q.dequeue(micro_operation);
+                    micro_operation(cpu);
+                }
             } else {
                 cpu->mem_read();
             }
@@ -504,9 +514,11 @@ void MOS6502::IIY() {
                 //              the next cycle will be executed only if boundary was crossed
 
                 // Exec immediately the next instruction
-                micro_op_t micro_operation;
-                cpu->microcode_q.dequeue(micro_operation);
-                micro_operation(cpu);
+                if (!cpu->microcode_q.is_empty()) {
+                    micro_op_t micro_operation;
+                    cpu->microcode_q.dequeue(micro_operation);
+                    micro_operation(cpu);
+                }
             } else {
                 cpu->mem_read();
             }
@@ -1362,10 +1374,10 @@ void MOS6502::NOP() {
     // TODO(max): fix the nop
 
     // TICK(A + 1): Read from effective address
-    MICROCODE(
-        cpu->mem_read();
-        asm("nop");
-    );
+    // MICROCODE(
+    //     cpu->mem_read();
+    //     asm("nop");
+    // );
 }
 
 void MOS6502::ORA() {
