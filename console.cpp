@@ -9,9 +9,11 @@
 #define RAM_SIZE 64 * 1024
 #define EMPTY ' '
 
-
+static Console *inst = nullptr;
 static void cpu_log(const std::string &msg) {
-    // TODO(max): simplementet the logger
+    if (inst != nullptr) {
+        inst->push_log(msg);
+    }
 }
 
 
@@ -390,5 +392,6 @@ void Console::push_log(const std::string &str) {
 
 int main(int argc, char **argv) {
     Console console;
+    inst = &console;
     return console.run(argc, argv);
 }

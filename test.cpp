@@ -1,7 +1,8 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest.h>
 
-#include <fstream>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "mos6502.hpp"
 #include "common.hpp"
@@ -15,10 +16,18 @@
 #define LOG_INST_LEN            19
 #define LOG_REG_OFFSET          48
 #define LOG_REG_LEN             25
+#define LOG_CYC_OFFSET          87
 
 #define NES_PRG_BANK_SIZE       16384
 #define NES_CHR_BANK_SIZE       8192
 #define NES_RAM                 2048
+
+#define TIMING_TEST_BIN         "resources/6502timing/timingtest.bin"
+#define TIMING_TEST_LOG_FILE    "resources/6502timing/timingtest.log"
+#define TIMING_TEST_MEM_LOC     0x1000
+#define TIMING_TEST_PC_END      0x1269
+// On visual6502 it takes 1141 cycles, PC should be in 1269 hex
+#define TIMING_TEST_TOT_CYCLES  1141
 
 // iNES Format Header
 struct ines_header_t {
@@ -64,7 +73,7 @@ static void mem_callback(void *usr_data,
 static bool load_NES_cartridge(const char *file, NES_cartridge_t &cartridge_out);
 
 
-TEST_CASE("Test") {
+TEST_CASE("NES Test") {
     char state_log[150];
     p_state_t state;
     p_state_t previous_state;
@@ -96,18 +105,26 @@ TEST_CASE("Test") {
 
         if (log_file) {
             iteration++;
+
             // Exec next instruction
-            cpu.clock();
+            while (!cpu.clock()) {};
+
             p_state_t curr_state = cpu.get_status();
 
             // SOME STATE MAGIC TO MAKE MATCH THE LOG FILE
             state = curr_state;
 
             state.P = previous_state.P;
+
             state.S = previous_state.S;
+
             state.A = previous_state.A;
+
             state.X = previous_state.X;
+
             state.Y = previous_state.Y;
+
+            state.tot_cycles = previous_state.tot_cycles;
 
             previous_state = curr_state;
 
@@ -115,6 +132,7 @@ TEST_CASE("Test") {
 
             // Compare current instruction
             cmp_res = memcmp(line, state_log, LOG_INST_LEN);
+
             printf("%s\n", state_log);
 
             if (cmp_res != 0) {
@@ -131,6 +149,16 @@ TEST_CASE("Test") {
             }
 
             REQUIRE_EQ(cmp_res, 0);
+
+            // Compare cycles
+            // size_t len = strlen(line);
+            // cmp_res = memcmp(line + LOG_CYC_OFFSET, state_log + LOG_CYC_OFFSET, len - LOG_CYC_OFFSET);
+
+            // if (cmp_res != 0) {
+            //     printf("CYCLES COUNT Missmatch on iteration %d\n%s\n", iteration, line);
+            // }
+
+            // REQUIRE_EQ(cmp_res, 0);
         }
 
     }
@@ -138,6 +166,231 @@ TEST_CASE("Test") {
     log_file.close();
 }
 
+
+TEST_CASE("Cycles Timing Test") {
+    uint8_t mem[64 * 1024];
+    // Initialize the cpu and set the log callback
+    MOS6502 cpu(
+    [](void *usr_data, const uint16_t address, const access_mode_t read_write, uint8_t &data) -> void {
+        uint8_t *mem = (uint8_t *) usr_data;
+
+        switch (read_write) {
+        case access_mode_t::READ:
+            data = mem[address];
+            break;
+
+        case access_mode_t::WRITE:
+            mem[address] = data;
+            break;
+
+        default:
+            log_clb("Unexpected mem access type");
+            break;
+        }
+    },
+    (void *)mem);
+
+    cpu.set_log_callback(log_clb);
+
+    // Reset the cpu before use and set the Program Counter to specific mem addres in order to perfrom all tests
+    cpu.reset();
+    cpu.set_PC(TIMING_TEST_MEM_LOC);
+
+    // The code starts from 0x1000
+    mem[0xFFFC] = (uint8_t)TIMING_TEST_MEM_LOC & 0x00FF;                       // Set the reset Vector ll
+    mem[0xFFFD] = (uint8_t)(TIMING_TEST_MEM_LOC >> 8) & 0x00FF;                 // Set the reset Vector hh
+
+    // NOTE(max):   Using the srec from this discussion http://forum.6502.org/viewtopic.php?f=8&t=3340
+    //              Loaded at address $1000
+
+    // Read the file
+    FILE *file = fopen(TIMING_TEST_BIN, "rb");
+    REQUIRE_NE(file, nullptr);
+
+    // get the file size
+    fseek(file, 0, SEEK_END);
+    size_t size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Load the code in mem
+    size_t read = fread(mem + TIMING_TEST_MEM_LOC, sizeof(uint8_t), size, file);
+    REQUIRE_EQ(read, size);
+
+    fclose(file);
+
+    // Open the log file used to check the correct cpu behavior
+    std::ifstream log_file(TIMING_TEST_LOG_FILE);
+    REQUIRE(log_file);
+    char line[150];
+
+    for (int i = 0; i < 5; i++) {
+        // Consume first 5 lines
+        log_file.getline(line, 255);
+    }
+
+    cpu.cycles = 2;
+    p_state_t curr_state;
+    p_state_t old_state = cpu.get_status();
+    char state_log[150];
+    int iteration = 0;
+    int cmp_res;
+    uint64_t last_expected_cyc = 784803;
+    uint64_t last_current_cyc = 0;
+    char *endptr;
+
+    while (log_file) {
+        // Read log file line by line
+        log_file.getline(line, 255);
+
+        if (log_file) {
+            iteration++;
+
+            while (!cpu.clock()) {};
+
+            curr_state = cpu.get_status();
+
+            build_log_str(state_log, curr_state);
+
+            // Compare PC
+            cmp_res = memcmp(line + 11, state_log, 4);
+
+            printf("%s\n", state_log);
+
+            if (cmp_res != 0) {
+                printf("PC Missmatch on iteration %d\n%s\n", iteration, line);
+            }
+
+            REQUIRE_EQ(cmp_res, 0);
+
+            // Compare MNEMONIC INSTRUCTION
+            cmp_res = memcmp(line + 18, state_log + 16, 3);
+
+            if (cmp_res != 0) {
+                printf("INSTRUCTION Missmatch on iteration %d\n%s\n", iteration, line);
+            }
+
+            REQUIRE_EQ(cmp_res, 0);
+
+            // Compare cycles number
+            uint64_t tmp = strtoul(line + 3, &endptr, 10);
+            uint64_t expected_cyc = tmp - last_expected_cyc;
+            uint64_t current_cyc = old_state.tot_cycles - last_current_cyc;
+
+            if (expected_cyc != current_cyc) {
+                printf("CYCLE Missmatch on iteration %d\nExpect: %lu Current: %lu\n%s\n",
+                       iteration, expected_cyc, current_cyc, line);
+            }
+
+            REQUIRE_EQ(expected_cyc, current_cyc);
+
+            last_current_cyc = old_state.tot_cycles;
+            last_expected_cyc = tmp;
+            old_state = curr_state;
+        }
+    }
+
+    log_file.close();
+
+    // Compare the cycles number
+    curr_state = cpu.get_status();
+    printf("%d\n", curr_state.tot_cycles);
+}
+
+
+TEST_CASE("Queue Test") {
+    Queue<int, 10> q;
+
+    REQUIRE_FALSE(q.is_full());
+    REQUIRE(q.is_empty());
+
+    for (int i = 0; i < 10; i++) {
+        REQUIRE_FALSE(q.is_full());
+        REQUIRE(q.enqueue(i));
+        REQUIRE_FALSE(q.is_empty());
+    }
+
+    REQUIRE(q.is_full());
+    int tmp;
+    REQUIRE(q.front(tmp));
+    REQUIRE_EQ(tmp, 0);
+
+    REQUIRE(q.rear(tmp));
+    REQUIRE_EQ(tmp, 9);
+
+    for (int i = 0; i < 10; i++) {
+        int elem;
+        REQUIRE(q.dequeue(elem));
+        REQUIRE_EQ(i, elem);
+        REQUIRE_FALSE(q.is_full());
+    }
+
+    for (int i = 0; i < 10; i++) {
+        REQUIRE_FALSE(q.is_full());
+        REQUIRE(q.enqueue(i));
+        REQUIRE_FALSE(q.is_empty());
+    }
+
+    REQUIRE(q.is_full());
+    q.clear();
+    REQUIRE_FALSE(q.is_full());
+    REQUIRE(q.is_empty());
+
+    for (int i = 0; i < 9; i++) {
+        REQUIRE_FALSE(q.is_full());
+        REQUIRE(q.enqueue(i));
+        REQUIRE_FALSE(q.is_empty());
+    }
+
+    REQUIRE_FALSE(q.is_full());
+
+    REQUIRE(q.insert_in_front(42));
+
+    REQUIRE(q.is_full());
+
+    REQUIRE(q.front(tmp));
+    REQUIRE_EQ(42, tmp);
+
+    REQUIRE(q.rear(tmp));
+    REQUIRE_EQ(8, tmp);
+
+    REQUIRE(q.dequeue(tmp));
+    REQUIRE_EQ(42, tmp);
+
+    for (int i = 0; i < 9; i++) {
+        int elem;
+        REQUIRE(q.dequeue(elem));
+        REQUIRE_EQ(i, elem);
+        REQUIRE_FALSE(q.is_full());
+    }
+
+    REQUIRE(q.is_empty());
+
+    for (int i = 0; i < 5; i++) {
+        REQUIRE_FALSE(q.is_full());
+        REQUIRE(q.enqueue(i));
+        REQUIRE_FALSE(q.is_empty());
+    }
+
+    REQUIRE(q.insert_in_front(42));
+
+    REQUIRE_FALSE(q.is_full());
+
+    REQUIRE(q.front(tmp));
+    REQUIRE_EQ(42, tmp);
+
+    REQUIRE(q.rear(tmp));
+    REQUIRE_EQ(4, tmp);
+
+    REQUIRE(q.dequeue(tmp));
+    REQUIRE_EQ(42, tmp);
+
+    for (int i = 0; i < 4; i++) {
+        int elem;
+        REQUIRE(q.dequeue(elem));
+        REQUIRE_EQ(i, elem);
+        REQUIRE_FALSE(q.is_full());
+    }
+}
 
 static void log_clb(const std::string &log) {
     printf("%s\n", log.c_str());
