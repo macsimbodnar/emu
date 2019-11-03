@@ -87,23 +87,19 @@ The **EMU** is case insensitive for now
 
 ### Now
 
-* Check if the sum (with carry/borrow) is done correctly inside Branching instructions (BCC, BCS, BNE, BEQ, BPL, BMI, BVC, BVS)
 * Replace tmp_buff uint16_t with tmp_h and tmp_l uint8_t
 * Rewrite all casts from C style to static_cast C++ like
-* Fix the Immediate addressing
-* Test BRK instruction
 * Check the timing of the composed illegal opcodes
 * Implement decimal mode
-* Make processor cycle precise (each clock tick should change the inner status of the processor like in this [simulator](http://www.visual6502.org/JSSim/index.html))
-* Check if the opcode table is correct in terms of cycles
 * Test the interrupts
-* Expand current test to check also the num of cycles
-* Better interface for the **EMU**
-* More user friendly and complex commands for the **EMU**
-* In **EMU** set the current according on the status of the processor. This feature should be turned on and off by the user
+* Implement clock
+* Test speed on ARMs processors (like raspberry or BeagleBone or TechNexion)
 
 ### In the future
 
+* In **EMU** set the current according on the status of the processor. This feature should be turned on and off by the user
+* Better interface for the **EMU**
+* More user friendly and complex commands for the **EMU**
 * Introduce some other tests beside the `nestest.nes`
 * Will be nice to find more logs of `nestest.nes` and test against it too
 * Integrate into **EMU** the program loader directly from hex formatted file
