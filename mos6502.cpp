@@ -1,7 +1,7 @@
 #include "mos6502.hpp"
 
 #define MICROCODE(code) microcode_q.enqueue(([](MOS6502 * cpu) -> void { code }))
-#define MICROCODE_IN_FRONT(code) microcode_q.insert_in_front(([](MOS6502 * cpu) -> void { code }))
+// #define MICROCODE_IN_FRONT(code) microcode_q.insert_in_front(([](MOS6502 * cpu) -> void { code }))
 #define ADDRESS(hi, lo) (static_cast<uint16_t>((static_cast<uint16_t>(hi) << 8) | (lo)))
 // #define ADDRESS(hi, lo) (static_cast<uint16_t>(256U * hi + lo))
 // Combine the high bits of first argument with low bits of second argument
@@ -260,8 +260,19 @@ void MOS6502::ACC() {
 void MOS6502::IMM() {
     // TICK(1): Fetch opcode, increment PC
 
+// *INDENT-OFF*
     // TODO(max): The PC should be incremented at the same cycle that the mem_read!
-    address_bus = PC++;
+    MICROCODE(
+        cpu->address_bus = cpu->PC++;
+
+        // Esecute now the next insruction
+        if (!cpu->microcode_q.is_empty()) {
+            micro_op_t micro_operation;
+            cpu->microcode_q.dequeue(micro_operation);
+            micro_operation(cpu);
+        }
+    );
+// *INDENT-ON*
 }
 
 void MOS6502::ABS() {
@@ -1378,6 +1389,8 @@ void MOS6502::NOP() {
     //     cpu->mem_read();
     //     asm("nop");
     // );
+
+    asm("nop");
 }
 
 void MOS6502::ORA() {

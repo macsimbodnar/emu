@@ -87,6 +87,7 @@ The **EMU** is case insensitive for now
 
 ### Now
 
+* Fix NOP timing
 * Replace tmp_buff uint16_t with tmp_h and tmp_l uint8_t
 * Rewrite all casts from C style to static_cast C++ like
 * Check the timing of the composed illegal opcodes
