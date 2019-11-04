@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "mos6502.hpp"
 #include "common.hpp"
@@ -277,7 +278,7 @@ TEST_CASE("Cycles Timing Test") {
             uint64_t current_cyc = old_state.tot_cycles - last_current_cyc;
 
             if (expected_cyc != current_cyc) {
-                printf("CYCLE Missmatch on iteration %d\nExpect: %lu Current: %lu\n%s\n",
+                printf("CYCLE Missmatch on iteration %d\nExpect: %" PRIu64 " Current: %" PRIu64 "\n%s\n",
                        iteration, expected_cyc, current_cyc, line);
             }
 
