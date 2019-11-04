@@ -46,6 +46,7 @@ struct p_state_t {
     uint8_t arg2;                   // Argument 2 of the last opcode executed. Is valid only if opcode_size > 2
 
     uint32_t tot_cycles;            // Total cycles executed by the cpu. NOTE(max): currently not used
+    int64_t time;                   // Time that this cycle take to execute in ms
 };
 
 

@@ -46,6 +46,10 @@ void MOS6502::mem_write() {
 
 
 bool MOS6502::clock() {
+    timeval t1;
+    timeval t2;
+    gettimeofday(&t1, nullptr);
+
     cycles++;
 
     if (microcode_q.is_empty()) {   // Fetch and decode next instruction
@@ -85,6 +89,9 @@ bool MOS6502::clock() {
 
         } while (!microcode_q.is_empty() && accumulator_addressing);
     }
+
+    gettimeofday(&t2, nullptr);
+    time = time_diff(&t1, &t2);
 
     // TEST
     if (microcode_q.is_empty()) {
@@ -203,7 +210,8 @@ p_state_t MOS6502::get_status() {
             PC_executed,
             arg1,
             arg2,
-            cycles};
+            cycles,
+            time};
 }
 
 

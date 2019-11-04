@@ -23,7 +23,8 @@ class MOS6502 {
     void irq();                             // Interrupt signal
     void nmi();                             // Non-maskable interrupt signal
 
-    void set_PC(uint16_t address);          // Set the PC to specific memory address. NOTE(max): debug/test
+    void set_PC(uint16_t address);          // Set the PC to specific memory address.
+    //                                         NOTE(max): debug/test
 
     p_state_t get_status();                 // Return the struct containing the current processor status. NOTE(max): debug/test
     void set_log_callback(log_callback);    // Set the callback used for log. Not mandatory
@@ -94,6 +95,7 @@ class MOS6502 {
     uint16_t hi;
     uint16_t lo;
     uint32_t cycles = 0;
+    int64_t time;                                 // Time that this cycle take to execute in ms
 
     // The vector containing the opcode and addressing fuctions and info.
     // The vector is 256 size long and the opcode byte match the correct addressing mode and function
