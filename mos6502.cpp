@@ -261,7 +261,7 @@ void MOS6502::IMM() {
     // TICK(1): Fetch opcode, increment PC
 
 // *INDENT-OFF*
-    // TODO(max): The PC should be incremented at the same cycle that the mem_read!
+    // TICK(2): Fetch value, increment PC
     MICROCODE(
         cpu->address_bus = cpu->PC++;
 
@@ -441,11 +441,7 @@ void MOS6502::ABY() {
 void MOS6502::IMP() {
     // TICK(1): Fetch opcode, increment PC
 
-    // TICK(2): Read next instruction byte (and throw it away)
-    MICROCODE(
-        cpu->address_bus = cpu->PC + 1;
-        cpu->mem_read();
-    );
+    asm("nop");
 }
 
 void MOS6502::REL() {
@@ -1385,12 +1381,10 @@ void MOS6502::NOP() {
     // TODO(max): fix the nop
 
     // TICK(A + 1): Read from effective address
-    // MICROCODE(
-    //     cpu->mem_read();
-    //     asm("nop");
-    // );
-
-    asm("nop");
+    MICROCODE(
+        // cpu->mem_read();
+        asm("nop");
+    );
 }
 
 void MOS6502::ORA() {
@@ -1406,6 +1400,12 @@ void MOS6502::ORA() {
 
 void MOS6502::PHA() {
 
+    // TICK(2): read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
+
     // TICK(3): Push register on stack, decrement S
     MICROCODE(
         cpu->data_bus = cpu->A;
@@ -1415,6 +1415,12 @@ void MOS6502::PHA() {
 }
 
 void MOS6502::PHP() {
+
+    // TICK(2): read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
 
     // TICK(3): Push register on stack, decrement S
     MICROCODE(
@@ -1427,6 +1433,12 @@ void MOS6502::PHP() {
 }
 
 void MOS6502::PLA() {
+
+    // TICK(2): read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
 
     // TICK(3): Increment S
     MICROCODE(
@@ -1444,6 +1456,12 @@ void MOS6502::PLA() {
 }
 
 void MOS6502::PLP() {
+
+    // TICK(2): read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
 
     // TICK(3): Increment S
     MICROCODE(
@@ -1508,6 +1526,12 @@ void MOS6502::ROR() {
 
 void MOS6502::RTI() {
 
+    // TICK(2): read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
+
     // TICK(3): Increment S
     MICROCODE(
         cpu->S++;
@@ -1542,6 +1566,12 @@ void MOS6502::RTI() {
 }
 
 void MOS6502::RTS() {
+
+    // TICK(2): read next instruction byte (and throw it away)
+    MICROCODE(
+        cpu->address_bus = cpu->PC + 1;
+        cpu->mem_read();
+    );
 
     // TICK(3): Increment S
     MICROCODE(
