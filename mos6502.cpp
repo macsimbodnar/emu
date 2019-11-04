@@ -1386,8 +1386,6 @@ void MOS6502::LSR() {
 }
 
 void MOS6502::NOP() {
-    // TODO(max): fix the nop
-
     // TICK(A + 1): Read from effective address
     MICROCODE(
         asm("nop");
@@ -1396,8 +1394,6 @@ void MOS6502::NOP() {
 
 
 void MOS6502::NO2() {
-    // TODO(max): fix the nop
-
     // TICK(A + 1):
     MICROCODE(
         asm("nop");
