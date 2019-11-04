@@ -277,7 +277,7 @@ TEST_CASE("Cycles Timing Test") {
             uint64_t current_cyc = old_state.tot_cycles - last_current_cyc;
 
             if (expected_cyc != current_cyc) {
-                printf("CYCLE Missmatch on iteration %d\nExpect: %lu Current: %lu\n%s\n",
+                printf("CYCLE Missmatch on iteration %d\nExpect: %llu Current: %llu\n%s\n",
                        iteration, expected_cyc, current_cyc, line);
             }
 
