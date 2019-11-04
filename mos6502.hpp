@@ -196,6 +196,7 @@ class MOS6502 {
     void LSR();         // Shift 1 bit RIGHT (Memory or A)
 
     void NOP();         // No Operation
+    void NO2();         // No Operation (this one take 2 instruction to execute)
 
     void ORA();         // "OR" Memory with the A
 
