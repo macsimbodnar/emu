@@ -229,7 +229,7 @@ TEST_CASE("Cycles Timing Test") {
         log_file.getline(line, 255);
     }
 
-    cpu.cycles = 2;
+    cpu.set_cycle(2);
     p_state_t curr_state;
     p_state_t old_state = cpu.get_status();
     char state_log[150];

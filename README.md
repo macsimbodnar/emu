@@ -87,7 +87,7 @@ The **EMU** is case insensitive for now
 
 ### Now
 
-* Fix NOP timing
+* Fix the interrupts timing
 * Replace tmp_buff uint16_t with tmp_h and tmp_l uint8_t
 * Rewrite all casts from C style to static_cast C++ like
 * Check the timing of the composed illegal opcodes
@@ -160,6 +160,8 @@ The **EMU** is case insensitive for now
 * [Document](http://www.zimmers.net/anonftp/pub/cbm/documents/chipdata/64doc) used for **timing** in the cycle-precise version. It is about 6510 but the instructions set should be the same as the 6502
 
 * Nice [Instruction timing](http://nparker.llx.com/a2/opcodes.html#chart) description and more info
+
+* Detailed [Interrupts description](https://en.wikipedia.org/wiki/Interrupts_in_65xx_processors) of 65XX processors
 
 ## License
 

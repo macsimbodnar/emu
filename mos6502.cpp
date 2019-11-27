@@ -103,6 +103,21 @@ bool MOS6502::clock() {
 }
 
 
+void MOS6502::set_reset(level_t level) {
+    RESET = level;
+}
+
+
+void MOS6502::set_nmi(level_t level) {
+    NMI = level;
+}
+
+
+void MOS6502::set_irq(level_t level) {
+    IRQ = level;
+}
+
+
 void MOS6502::reset() {
     // Reset registers
     A = 0x00;
@@ -247,6 +262,11 @@ bool MOS6502::is_read_instruction() {
     }
 
     return false;
+}
+
+
+void MOS6502::set_cycle(uint32_t c) {
+    cycles = c;
 }
 
 
