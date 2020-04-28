@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <functional>
 #include <vector>
+#include <atomic>  
 #include "common.hpp"
 #include "util.hpp"
 
@@ -16,20 +17,29 @@
 
 class MOS6502 {
   public:
+
+    enum level_t {
+        ACTIVE = 0,
+        INACTIVE
+    };
+
     explicit MOS6502(mem_access_callback mem_acc_clb, void *usr_data);
 
     bool clock();                           // Clock signal
-    void reset();                           // Reset signal
-    void irq();                             // Interrupt signal
-    void nmi();                             // Non-maskable interrupt signal
+    void set_reset(level_t level);
+    void set_nmi(level_t level);
+    void set_irq(level_t level);
 
-    void set_PC(uint16_t address);          // Set the PC to specific memory address.
-    //                                         NOTE(max): debug/test
-
-    p_state_t get_status();                 // Return the struct containing the current processor status. NOTE(max): debug/test
     void set_log_callback(log_callback);    // Set the callback used for log. Not mandatory
 
-  public:
+    /********************************************************
+     *                     DEBUG / TEST                     *
+     ********************************************************/
+    void set_PC(uint16_t address);          // Set the PC to specific memory address.
+    void set_cycle(uint32_t c);
+    p_state_t get_status();                 // Return the struct containing the current processor status. NOTE(max): debug/test
+
+  private:
     /********************************************************
      *                  REGISTERS / FLAGS                   *
      ********************************************************/
@@ -48,6 +58,17 @@ class MOS6502 {
     uint8_t S = STACK_POINTER_DEFAULT;      // Stack pointer
     uint16_t PC = 0x0000;                   // Program counter
 
+    /********************************************************
+     *                       INTERRUPTS                     *
+     *   The hardware interrupt signals are all active low  *
+     ********************************************************/
+    std::atomic<level_t> RESET = level_t::INACTIVE;
+    std::atomic<level_t> NMI = level_t::INACTIVE;
+    std::atomic<level_t> IRQ = level_t::INACTIVE;
+
+    void reset();                           // Reset signal, level-triggered
+    void irq();                             // Interrupt signal, level-triggered
+    void nmi();                             // Non-maskable interrupt signal, edge-triggered
 
     /********************************************************
      *                    DATA STRUCTURES                   *
@@ -103,13 +124,15 @@ class MOS6502 {
 
     Queue<micro_op_t, 10> microcode_q;
 
+    log_callback log_func = nullptr;              // Callback used to log.
+
+
     /********************************************************
      *                     DEBUG / TEST                     *
      ********************************************************/
     uint16_t PC_executed;             // Address of the last executed opcode      NOTE(max): used only for debug and test. Not need to make the cpu work
     uint8_t arg1;                     // Argument 1 of the last executed opcode   NOTE(max): used only for debug and test. Not need to make the cpu work
     uint8_t arg2;                     // Argument 2 of the last executed opcode   NOTE(max): used only for debug and test. Not need to make the cpu work
-    log_callback log_func = nullptr;  // Callback used to log. Can be setted by set_log_callback()
 
     /********************************************************
      *                    UTIL FUNCTIONS                    *
@@ -118,10 +141,8 @@ class MOS6502 {
     bool read_flag(const status_flag_t flag);
     void mem_read();
     void mem_write();
-
     bool is_read_instruction();
 
-  public:
     void log(const std::string &msg);
 
 
