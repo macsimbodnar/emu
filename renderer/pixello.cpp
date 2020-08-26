@@ -1,12 +1,18 @@
 #include <vector>
 #include "pixello.hpp"
 
-void Pixello::set_logger(log_func log_c) {
-    log_callback = log_c;
-}
+struct window_t {
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+    bool is_running;
+    int width;
+    int height;
+};
 
+static log_func log_callback = nullptr;
+static window_t window;
 
-void Pixello::log(const std::string &msg) {
+static inline void log(const std::string &msg) {
     if (log_callback == nullptr) {
         return;
     }
@@ -14,38 +20,49 @@ void Pixello::log(const std::string &msg) {
     log_callback(msg);
 }
 
+/**
+ *  PUBLIC
+ */
+void set_logger(log_func log_c) {
+    log_callback = log_c;
+}
 
-bool Pixello::init(const std::string &name, const int width, const int height) {
-    w = width;
-    h = height;
 
+bool init() {
     //Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         log("SDL could not initialize! SDL_Error: %s\n" + std::string(SDL_GetError()));
         return false;
     }
 
-    //Create window
-    window = SDL_CreateWindow(name.c_str(),
-                              SDL_WINDOWPOS_UNDEFINED,
-                              SDL_WINDOWPOS_UNDEFINED,
-                              w, h,
-                              SDL_WINDOW_SHOWN);
+    return true;
+}
 
-    if (window == NULL) {
+
+bool create_window(const std::string &name, const int width, const int height) {
+    window_t new_window;
+
+    new_window.window = SDL_CreateWindow(name.c_str(),
+                                         SDL_WINDOWPOS_UNDEFINED,
+                                         SDL_WINDOWPOS_UNDEFINED,
+                                         width,
+                                         height,
+                                         SDL_WINDOW_SHOWN);
+
+    if (new_window.window == nullptr) {
         log("Window could not be created! SDL_Error: %s\n" + std::string(SDL_GetError()));
         return false;
     }
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    new_window.renderer = SDL_CreateRenderer(new_window.window, -1, SDL_RENDERER_ACCELERATED);
 
-    if (renderer == NULL) {
+    if (new_window.renderer == nullptr) {
         log("Renderer could not be created! SDL_Error: %s\n" + std::string(SDL_GetError()));
         return false;
     }
 
     SDL_RendererInfo info;
-    SDL_GetRendererInfo(renderer, &info);
+    SDL_GetRendererInfo(new_window.renderer, &info);
     log("Renderer name: " + std::string(info.name));
     log("Texture formats: ");
 
@@ -53,46 +70,62 @@ bool Pixello::init(const std::string &name, const int width, const int height) {
         log(std::string(SDL_GetPixelFormatName(info.texture_formats[i])));
     }
 
-    const unsigned int texWidth = w;
-    const unsigned int texHeight = h;
-    SDL_Texture *texture = SDL_CreateTexture
-                           (
-                               renderer,
+    new_window.width = width;
+    new_window.height = height;
+    new_window.is_running = false;
+
+    window = new_window;
+    return true;
+}
+
+
+bool run(update_func update_function, const int scale) {
+    if (scale < 1) {
+        log("Scale should be at least 1");
+        return false;
+    }
+
+    window.is_running = true;
+
+    const unsigned int texWidth = window.width / scale;
+    const unsigned int texHeight = window.height / scale;
+    SDL_Texture *texture = SDL_CreateTexture(
+                               window.renderer,
                                SDL_PIXELFORMAT_ARGB8888,
                                SDL_TEXTUREACCESS_STREAMING,
-                               texWidth, texHeight
-                           );
+                               texWidth,
+                               texHeight);
 
-    std::vector<unsigned char> pixels(texWidth * texHeight * 4, 0);
+    unsigned char *pixels = (unsigned char *) malloc(texWidth * texHeight * 4);
 
     SDL_Event event;
-    bool running = true;
 
-    while (running) {
+    while (window.is_running) {
         const Uint64 start = SDL_GetPerformanceCounter();
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-        SDL_RenderClear(renderer);
+        SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        SDL_RenderClear(window.renderer);
 
         while (SDL_PollEvent(&event)) {
             if ((SDL_QUIT == event.type) ||
                     (SDL_KEYDOWN == event.type && SDL_SCANCODE_ESCAPE == event.key.keysym.scancode)) {
-                running = false;
+                window.is_running = false;
                 break;
             }
         }
 
+        update_function(pixels, texWidth, texHeight, 4);
         // splat down some random pixels
-        for (unsigned int i = 0; i < 1000; i++) {
-            const unsigned int x = rand() % texWidth;
-            const unsigned int y = rand() % texHeight;
+        // for (unsigned int i = 0; i < 1000; i++) {
+        //     const unsigned int x = rand() % texWidth;
+        //     const unsigned int y = rand() % texHeight;
 
-            const unsigned int offset = (texWidth * 4 * y) + x * 4;
-            pixels[ offset + 0 ] = rand() % 256;        // b
-            pixels[ offset + 1 ] = rand() % 256;        // g
-            pixels[ offset + 2 ] = rand() % 256;        // r
-            pixels[ offset + 3 ] = SDL_ALPHA_OPAQUE;    // a
-        }
+        //     const unsigned int offset = (texWidth * 4 * y) + x * 4;
+        //     pixels[ offset + 0 ] = rand() % 256;        // b
+        //     pixels[ offset + 1 ] = rand() % 256;        // g
+        //     pixels[ offset + 2 ] = rand() % 256;        // r
+        //     pixels[ offset + 3 ] = SDL_ALPHA_OPAQUE;    // a
+        // }
 
         //unsigned char* lockedPixels;
         //int pitch;
@@ -106,16 +139,13 @@ bool Pixello::init(const std::string &name, const int width, const int height) {
         //std::copy( pixels.begin(), pixels.end(), lockedPixels );
         //SDL_UnlockTexture( texture );
 
-        SDL_UpdateTexture
-        (
-            texture,
-            NULL,
-            &pixels[0],
-            texWidth * 4
-        );
+        SDL_UpdateTexture(texture,
+                          NULL,
+                          pixels,
+                          texWidth * 4);
 
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
+        SDL_RenderCopy(window.renderer, texture, NULL, NULL);
+        SDL_RenderPresent(window.renderer);
 
         const Uint64 end = SDL_GetPerformanceCounter();
         const static Uint64 freq = SDL_GetPerformanceFrequency();
@@ -128,12 +158,9 @@ bool Pixello::init(const std::string &name, const int width, const int height) {
 }
 
 
-bool Pixello::close() {
+void close() {
     //Destroy window
-    SDL_DestroyWindow(window);
-
+    SDL_DestroyWindow(window.window);
     //Quit SDL subsystems
     SDL_Quit();
-
-    return true;
 }
