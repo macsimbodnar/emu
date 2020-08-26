@@ -4,4 +4,3 @@ documentation
 .vscode
 test
 *.dSYM
-build/test_pixello
