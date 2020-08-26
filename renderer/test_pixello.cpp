@@ -6,7 +6,7 @@ void log(const std::string &msg) {
 }
 
 
-int main() {
+int WinMain() {
     Pixello pixel;
 
     pixel.set_logger(log);
