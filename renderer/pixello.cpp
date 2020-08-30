@@ -1,4 +1,5 @@
 #include <vector>
+#include "SDL_FontCache.h"
 #include "pixello.hpp"
 
 struct window_t {
@@ -85,6 +86,19 @@ bool run(update_func update_function, const int scale) {
         return false;
     }
 
+    FC_Font *font = FC_CreateFont();
+
+    if (FC_LoadFont(font, window.renderer,
+                    "fonts/FreeSans.ttf",
+                    50,
+                    FC_MakeColor(1, 1, 1, 255),
+                    TTF_STYLE_NORMAL) == 0) {
+
+        log("Load Font  failed");
+        return false;
+
+    }
+
     window.is_running = true;
 
     const unsigned int texWidth = window.width / scale;
@@ -101,6 +115,9 @@ bool run(update_func update_function, const int scale) {
     SDL_Event event;
 
     while (window.is_running) {
+
+        FC_Draw(font, window.renderer, 100, 100, "This is %s.\n It works.", "example text");
+
         const Uint64 start = SDL_GetPerformanceCounter();
 
         SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
@@ -139,6 +156,7 @@ bool run(update_func update_function, const int scale) {
         //std::copy( pixels.begin(), pixels.end(), lockedPixels );
         //SDL_UnlockTexture( texture );
 
+
         SDL_UpdateTexture(texture,
                           NULL,
                           pixels,
@@ -153,6 +171,8 @@ bool run(update_func update_function, const int scale) {
 
         log("Frame time: " + std::to_string(seconds * 1000.0) + "ms");
     }
+
+    FC_FreeFont(font);
 
     return true;
 }
