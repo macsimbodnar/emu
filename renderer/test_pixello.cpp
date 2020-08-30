@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include <cstring>
 #include "pixello.hpp"
 
 void log(const std::string &msg) {
@@ -27,7 +28,7 @@ void update(unsigned char *pixels,
 }
 
 
-int WinMain() {
+int main() {
     set_logger(&log);
 
     if (!init()) {

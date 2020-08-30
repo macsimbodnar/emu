@@ -1,5 +1,5 @@
 #include <vector>
-#include "SDL_FontCache.h"
+// #include "SDL_FontCache.h"
 #include "pixello.hpp"
 
 struct window_t {
@@ -86,18 +86,18 @@ bool run(update_func update_function, const int scale) {
         return false;
     }
 
-    FC_Font *font = FC_CreateFont();
+    // FC_Font *font = FC_CreateFont();
 
-    if (FC_LoadFont(font, window.renderer,
-                    "fonts/FreeSans.ttf",
-                    50,
-                    FC_MakeColor(1, 1, 1, 255),
-                    TTF_STYLE_NORMAL) == 0) {
+    // if (FC_LoadFont(font, window.renderer,
+    //                 "fonts/FreeSans.ttf",
+    //                 50,
+    //                 FC_MakeColor(1, 1, 1, 255),
+    //                 TTF_STYLE_NORMAL) == 0) {
 
-        log("Load Font  failed");
-        return false;
+    //     log("Load Font  failed");
+    //     return false;
 
-    }
+    // }
 
     window.is_running = true;
 
@@ -116,20 +116,20 @@ bool run(update_func update_function, const int scale) {
 
     while (window.is_running) {
 
-        FC_Draw(font, window.renderer, 100, 100, "This is %s.\n It works.", "example text");
+        // FC_Draw(font, window.renderer, 100, 100, "This is %s.\n It works.", "example text");
 
         const Uint64 start = SDL_GetPerformanceCounter();
 
-        SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-        SDL_RenderClear(window.renderer);
+        // SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        // SDL_RenderClear(window.renderer);
 
-        while (SDL_PollEvent(&event)) {
-            if ((SDL_QUIT == event.type) ||
-                    (SDL_KEYDOWN == event.type && SDL_SCANCODE_ESCAPE == event.key.keysym.scancode)) {
-                window.is_running = false;
-                break;
-            }
-        }
+        // while (SDL_PollEvent(&event)) {
+        //     if ((SDL_QUIT == event.type) ||
+        //             (SDL_KEYDOWN == event.type && SDL_SCANCODE_ESCAPE == event.key.keysym.scancode)) {
+        //         window.is_running = false;
+        //         break;
+        //     }
+        // }
 
         update_function(pixels, texWidth, texHeight, 4);
         // splat down some random pixels
@@ -172,7 +172,7 @@ bool run(update_func update_function, const int scale) {
         log("Frame time: " + std::to_string(seconds * 1000.0) + "ms");
     }
 
-    FC_FreeFont(font);
+    // FC_FreeFont(font);
 
     return true;
 }
