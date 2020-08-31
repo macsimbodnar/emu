@@ -7,9 +7,9 @@ pixello.o: pixello.cpp pixello.hpp
 	$(CXX) $(FLAGS) -c -o pixello.o pixello.cpp
 
 build_test_pixello: test_pixello.cpp $(ALLOBJ)
-	$(CXX) $(FLAGS) -o test_pixello test_pixello.cpp $(ALLOBJ) 
+	$(CXX) $(FLAGS) -o test_pixello test_pixello.cpp $(ALLOBJ) $(SDL2)
 
-test_pixello: build_test_pixello
+test: build_test_pixello
 	./test_pixello
 
 clean:
