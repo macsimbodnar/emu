@@ -22,10 +22,9 @@ set commonCompilerFlags=-MTd -Gm- -EHsc -WX -W4 -wd4838 -wd4702 -wd4701 -wd4244 
 :: set commonDLLExport=/EXPORT:gameUpdateAndRender /EXPORT:gameGetSoundSamples
 
 :: floating point optimisation -O2 -Oi -fp:fast 
-:: ..\test_pixello.cpp ..\pixello.cpp
-cl %commonCompilerFlags% ..\test_text.cpp ..\libs\SDL_FontCache\SDL_FontCache.c /link ..\libs\windows\SDL2\lib\x64\SDL2.lib ..\libs\windows\SDL2_ttf\lib\x64\SDL2_ttf.lib
+cl %commonCompilerFlags% ..\test_pixello.cpp ..\pixello.cpp /link ..\libs\windows\SDL2\lib\x64\SDL2.lib ..\libs\windows\SDL2_ttf\lib\x64\SDL2_ttf.lib
 
-:: xcopy /Y test_pixello.exe build\
+xcopy /Y test_pixello.exe build\
 xcopy /Y ..\libs\windows\SDL2\lib\x64\SDL2.dll .\
 xcopy /Y ..\libs\windows\SDL2_ttf\lib\x64\SDL2_ttf.dll .\
 xcopy /Y ..\libs\windows\SDL2_ttf\lib\x64\libfreetype-6.dll .\
