@@ -123,13 +123,13 @@ bool run(update_func update_function, const int scale) {
         // SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
         // SDL_RenderClear(window.renderer);
 
-        // while (SDL_PollEvent(&event)) {
-        //     if ((SDL_QUIT == event.type) ||
-        //             (SDL_KEYDOWN == event.type && SDL_SCANCODE_ESCAPE == event.key.keysym.scancode)) {
-        //         window.is_running = false;
-        //         break;
-        //     }
-        // }
+        while (SDL_PollEvent(&event)) {
+            if ((SDL_QUIT == event.type) ||
+                    (SDL_KEYDOWN == event.type && SDL_SCANCODE_ESCAPE == event.key.keysym.scancode)) {
+                window.is_running = false;
+                break;
+            }
+        }
 
         update_function(pixels, texWidth, texHeight, 4);
         // splat down some random pixels

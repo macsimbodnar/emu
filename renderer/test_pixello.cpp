@@ -13,18 +13,18 @@ void update(unsigned char *pixels,
             const unsigned int h,
             const unsigned int c) {
 
-    // for (unsigned int i = 0; i < 1000; i++) {
-    //     const unsigned int x = rand() % w;
-    //     const unsigned int y = rand() % h;
+    for (unsigned int i = 0; i < 1000; i++) {
+        const unsigned int x = rand() % w;
+        const unsigned int y = rand() % h;
 
-    //     const unsigned int offset = (w * c * y) + x * c;
-    //     pixels[ offset + 0 ] = rand() % 256;        // b
-    //     pixels[ offset + 1 ] = rand() % 256;        // g
-    //     pixels[ offset + 2 ] = rand() % 256;        // r
-    //     pixels[ offset + 3 ] = SDL_ALPHA_OPAQUE;    // a
-    // }
+        const unsigned int offset = (w * c * y) + x * c;
+        pixels[ offset + 0 ] = rand() % 256;        // b
+        pixels[ offset + 1 ] = rand() % 256;        // g
+        pixels[ offset + 2 ] = rand() % 256;        // r
+        pixels[ offset + 3 ] = SDL_ALPHA_OPAQUE;    // a
+    }
 
-    memset(pixels, 255, w * h * c);
+    // memset(pixels, 255, w * h * c);
 }
 
 
@@ -39,7 +39,7 @@ int main() {
         return 2;
     }
 
-    if (!run(&update, 1)) {
+    if (!run(&update, 20)) {
         return 3;
     }
 
