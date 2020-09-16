@@ -1,6 +1,6 @@
 --style=google
 --indent=spaces=4
---max-code-length=100
+--max-code-length=130
 --break-blocks
 --break-one-line-headers
 --add-one-line-braces

@@ -6,7 +6,7 @@ SDL = `pkg-config --cflags --libs sdl2`
 
 DOCTEST = -I ./libs
 
-ALLOBJ = mos6502.o opcode.o util.o
+ALLOBJ = mos6502.o opcode.o util.o ppu.o cartridge.o nes.o
 
 all: console.o build_test
 
@@ -21,6 +21,18 @@ util.o: util.cpp util.hpp
 
 console.o: console.cpp console.hpp $(ALLOBJ)
 	$(CXX) $(FLAGS) -o $(PROGNAME) console.cpp $(ALLOBJ)
+
+ppu.o: ppu.cpp ppu.hpp
+	$(CXX) $(FLAGS) -c -o ppu.o ppu.cpp
+
+cartridge.o: cartridge.cpp cartridge.hpp
+	$(CXX) $(FLAGS) -c -o cartridge.o cartridge.cpp
+
+cartridge.o: nes.cpp nes.hpp
+	$(CXX) $(FLAGS) -c -o nes.o nes.cpp
+
+nes: $(ALLOBJ)
+	$(CXX) $(FLAGS) -o nes main.cpp $(ALLOBJ)
 
 build_test: test.cpp $(ALLOBJ)
 	$(CXX) $(FLAGS) $(DOCTEST) -o test test.cpp $(ALLOBJ)

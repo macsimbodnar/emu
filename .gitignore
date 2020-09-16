@@ -6,3 +6,4 @@ test
 *.dSYM
 build
 renderer/test_pixello
+nes
