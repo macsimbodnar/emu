@@ -1,24 +1,7 @@
 #include "nes.hpp"
 
 
-static void mem_callback(void *usr_data, const uint16_t address, const access_mode_t read_write, uint8_t &data) {
-
-    switch (read_write) {
-    case access_mode_t::READ:
-        // data = cpu_read(address, false);
-        break;
-
-    case access_mode_t::WRITE:
-        // cpu_write(address, data);
-        break;
-
-    case access_mode_t::READ_ONLY:
-        break;
-    }
-}
-
-
-NES::NES() : cpu(mem_callback, nullptr) {
+NES::NES() {
     n_system_clock_counter = 0;
 }
 
@@ -51,7 +34,7 @@ void NES::cpu_write(const uint16_t address, const uint8_t data) {
 
 
 void NES::reset() {
-    cpu.reset();
+    // cpu.reset();
     n_system_clock_counter = 0;
 }
 

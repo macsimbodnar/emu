@@ -1,10 +1,10 @@
 #pragma once
 
 #include <array>
-#include "common.hpp"
-#include "mos6502.hpp"
-#include "ppu.hpp"
 #include "cartridge.hpp"
+#include "ppu.hpp"
+#include "cpu.hpp"
+
 
 /**
  * NES:
@@ -23,7 +23,7 @@ class NES {
 
     std::array<uint8_t, 2 * 1024> cpu_RAM;   // 2KBytes of RAM fro the CPU
     PPU ppu;
-    MOS6502 cpu;
+    CPU cpu;
 
     void cpu_write(const uint16_t address, const uint8_t data);
     uint8_t cpu_read(const uint16_t address, const bool read_only);
