@@ -20,19 +20,24 @@
  *
  * 2C02
  *******************************************************************************/
-#include <inttypes.h>
+#include <cstdint>
 #include "cartridge.hpp"
 
 class PPU {
-  Cartridge *cartridge;
+    Cartridge *cartridge;
+
+    uint8_t name_table[2][1024];  // 2KBytes of VRAM for name table
+    uint8_t palette[32];
 
   public:
+    PPU();
+
     uint8_t cpu_read(const uint16_t address, const bool read_only);
     void cpu_write(const uint16_t address, const uint8_t data);
 
     uint8_t ppu_read(const uint16_t address, const bool read_only);
     void ppu_write(const uint16_t address, const uint8_t data);
 
-    void connect_cartridge(const Cartridge *cartridge);
+    void connect_cartridge(Cartridge *cartridge);
     void clock();
 };

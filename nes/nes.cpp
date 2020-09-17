@@ -38,3 +38,11 @@ void NES::reset() {
     n_system_clock_counter = 0;
 }
 
+
+bool NES::insert_cartridge(const std::string &cartridge_path) {
+
+    ppu.connect_cartridge(&cartridge);
+    return cartridge.load_cartridge(cartridge_path);
+}
+
+

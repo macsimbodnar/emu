@@ -1,6 +1,9 @@
 #include "ppu.hpp"
 
 
+PPU::PPU() : cartridge(nullptr) {}
+
+
 uint8_t PPU::cpu_read(const uint16_t address, const bool read_only) {
     uint8_t data = 0x00;
 
@@ -81,4 +84,9 @@ uint8_t PPU::ppu_read(const uint16_t address, const bool read_only) {
 
 void PPU::ppu_write(const uint16_t address, const uint8_t data) {
     // const uint16_t masked_address = address & 0x3FFF;
+}
+
+
+void PPU::connect_cartridge(Cartridge *cart) {
+    cartridge = cart;
 }

@@ -22,6 +22,8 @@ class NES {
     uint32_t n_system_clock_counter;
 
     std::array<uint8_t, 2 * 1024> cpu_RAM;   // 2KBytes of RAM fro the CPU
+
+    Cartridge cartridge;
     PPU ppu;
     CPU cpu;
 
@@ -32,7 +34,7 @@ class NES {
   public:
     NES();
 
-    void insert_cartridge(const Cartridge *cartridge);
+    bool insert_cartridge(const std::string &cartridge_path);
     void reset();
     void clock();
 };
