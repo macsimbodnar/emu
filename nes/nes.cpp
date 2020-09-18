@@ -9,7 +9,12 @@ NES::NES() {
 uint8_t NES::cpu_read(const uint16_t address, const bool read_only) {
     uint8_t data = 0x00;
 
-    if (address >= 0x0000 && address <= 0x1FFF) {
+    // First we try on cartridge in case it handle it
+    if (cartridge.cpu_read(address, data)) {
+        // DO NOTHING
+    }
+    // RAM
+    else if (address >= 0x0000 && address <= 0x1FFF) {
         data = cpu_RAM[address & 0x07FF]; // Mirroring the RAM
     }
     // PPU
@@ -23,7 +28,11 @@ uint8_t NES::cpu_read(const uint16_t address, const bool read_only) {
 
 void NES::cpu_write(const uint16_t address, const uint8_t data) {
 
-    if (address >= 0x0000 && address <= 0x1FFF) {
+    if (cartridge.cpu_write(address, data)) {
+        // DO NOTHING
+    }
+    // RAM
+    else if (address >= 0x0000 && address <= 0x1FFF) {
         cpu_RAM[address & 0x07FF] = data; // Mirroring the RAM
     }
     // PPU

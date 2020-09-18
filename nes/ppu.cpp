@@ -76,14 +76,23 @@ void PPU::cpu_write(const uint16_t address, const uint8_t data) {
 
 uint8_t PPU::ppu_read(const uint16_t address, const bool read_only) {
     uint8_t data = 0x00;
-    // const uint16_t masked_address = address & 0x3FFF;
+    const uint16_t masked_address = address & 0x3FFF;
+
+    // TODO(max): should check if the cartridge is not nullptr
+    if (cartridge->ppu_read(masked_address, data)) {
+        // DO NOTHING
+    }
 
     return data;
 }
 
 
 void PPU::ppu_write(const uint16_t address, const uint8_t data) {
-    // const uint16_t masked_address = address & 0x3FFF;
+    const uint16_t masked_address = address & 0x3FFF;
+
+    if (cartridge->ppu_write(masked_address, data)) {
+        // DO NOTHING
+    }
 }
 
 

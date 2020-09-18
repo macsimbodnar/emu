@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
-
+#include "mapper.hpp"
 
 
 class Cartridge {
@@ -22,13 +22,14 @@ class Cartridge {
     uint8_t mapper_id;
     mirror_t mirror;
 
+    Mapper *mapper = nullptr;
 
   public:
     bool load_cartridge(const std::string &cartridge_file);
 
-    uint8_t cpu_read(const uint16_t address);
-    void cpu_write(const uint16_t address, const uint8_t data);
+    bool cpu_read(const uint16_t address, uint8_t &data);
+    bool cpu_write(const uint16_t address, const uint8_t data);
 
-    uint8_t ppu_read(const uint16_t address);
-    void ppu_write(const uint16_t address, const uint8_t data);
+    bool ppu_read(const uint16_t address, uint8_t &data);
+    bool ppu_write(const uint16_t address, const uint8_t data);
 };

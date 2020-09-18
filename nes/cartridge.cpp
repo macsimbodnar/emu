@@ -69,11 +69,17 @@ bool Cartridge::load_cartridge(const std::string &cartridge_file) {
     mapper_id = ((header.mapper2 >> 4) << 4) | (header.mapper1 >> 4);
     mirror = (header.mapper1 & 0x01) ? mirror_t::VERTICAL : mirror_t::HORIZONTAL;
 
-    if (mapper_id != 0) {
+    switch (mapper_id) {
+    case 0:
+        mapper = new Mapper_000(PRG_banks, CHR_banks);
+        break;
+
+    default:
         LOG_E("Unexpected mapper in the cartridge %s", c_file);
         fclose(fp);
         return false;
     }
+
 
     // TODO(max): discover file format, there are 3
     uint8_t file_format = 1;
@@ -115,4 +121,58 @@ bool Cartridge::load_cartridge(const std::string &cartridge_file) {
     fclose(fp);
 
     return true;
+}
+
+
+bool Cartridge::cpu_read(const uint16_t address, uint8_t &data) {
+
+    uint32_t mapped_address = 0;
+
+    // TODO(max): check if not nullptr
+    if (mapper->cpu_map_read(address, mapped_address)) {
+        data = PRG_memory[mapped_address];
+        return true;
+    }
+
+    return false;
+}
+
+
+bool Cartridge::cpu_write(const uint16_t address, const uint8_t data) {
+
+    uint32_t mapped_address = 0;
+
+    if (mapper->cpu_map_write(address, mapped_address)) {
+        PRG_memory[mapped_address] = data;
+        return true;
+    }
+
+    return false;
+}
+
+
+bool Cartridge::ppu_read(const uint16_t address, uint8_t &data) {
+
+    uint32_t mapped_address = 0;
+
+    // TODO(max): check if not nullptr
+    if (mapper->ppu_map_read(address, mapped_address)) {
+        data = CHR_memory[mapped_address];
+        return true;
+    }
+
+    return false;
+}
+
+
+bool Cartridge::ppu_write(const uint16_t address, const uint8_t data) {
+
+    uint32_t mapped_address = 0;
+
+    if (mapper->ppu_map_write(address, mapped_address)) {
+        CHR_memory[mapped_address] = data;
+        return true;
+    }
+
+    return false;
 }

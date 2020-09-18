@@ -3,7 +3,7 @@ FLAGS = -g -O0 -Wall -Werror -std=c++17 -I../
 
 MOS6502_DIR = ..
 ALLOBJ = $(patsubst %.o,$(MOS6502_DIR)/%.o,    mos6502.o opcode.o util.o)
-ALLOBJ += cartridge.o ppu.o cpu.o nes.o
+ALLOBJ += mapper.o cartridge.o ppu.o cpu.o nes.o
 
 all: main
 
