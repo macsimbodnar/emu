@@ -3,6 +3,8 @@ FLAGS := -Ilibs/linux/SDL2/include
 ALLOBJ := pixello.o
 SDL2 := -lSDL2
 
+all: pixello.o
+
 pixello.o: pixello.cpp pixello.hpp
 	$(CXX) $(FLAGS) -c -o pixello.o pixello.cpp
 
