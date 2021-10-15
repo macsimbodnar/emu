@@ -45,12 +45,10 @@ This is my implementation of the MOS6502 processor emulator
 
 ## How to compile
 
-* To **compile the whole project** just type in the root folder `make all`.
-* To **compile only the test** run `make build_test`
+TODO
 
 ## How to run
 
-* To **run tests** `make test`
 * To run the **console cpu** controller nicely named **EMU** `./emu name_of_the_binary`, like `./emu resources/program.bin`
 
 ## **EMU** user instruction

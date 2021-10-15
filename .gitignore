@@ -1,7 +1,5 @@
-*.o
-emu
-documentation
+*.ou
 .vscode
-test
 *.dSYM
-build/test_pixello
+build
+compile_commands.json
