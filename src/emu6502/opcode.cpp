@@ -2,7 +2,10 @@
 
 using M = MOS6502;
 
-// TODO(max): fix the illegal (*) opcode cycles numbers according to: https://wiki.nesdev.com/w/index.php/Programming_with_unofficial_opcodes
+// TODO(max): fix the illegal (*) opcode cycles numbers according to:
+// https://wiki.nesdev.com/w/index.php/Programming_with_unofficial_opcodes
+
+// clang-format off
 const std::vector<MOS6502::instruction_t> MOS6502::opcode_table = {
     //                    0                                  1                                  2                                    3                                   4                                        5                                  6                                   7                                  8                                  9                                         A                                   B                                   C                                  D                                  E                                   F
     /*0*/ { "BRK",  &M::BRK, &M::IMP, 7, 1 }, { "ORA", &M::ORA, &M::IIX, 6, 2 }, { "???", &M::XXX, &M::IMP, 2, 0 }, { "*SLO",  &M::SLO, &M::IIX, 8, 2 }, { "*NOP", &M::NO2, &M::IMM, 3, 2 }, /*0*/ { "ORA", &M::ORA, &M::ZPI, 3, 2 }, { "ASL", &M::ASL, &M::ZPI, 5, 2 }, { "*SLO", &M::SLO, &M::ZPI, 5, 2 }, { "PHP", &M::PHP, &M::IMP, 3, 1 }, { "ORA", &M::ORA, &M::IMM, 2, 2 }, /*0*/ { "ASL",  &M::ASL, &M::ACC, 2, 1 }, { "???",  &M::XXX, &M::IMP, 2, 0 }, { "*NOP", &M::NOP, &M::ABS, 4, 3 }, { "ORA", &M::ORA, &M::ABS, 4, 3 }, { "ASL", &M::ASL, &M::ABS, 6, 3 }, { "*SLO", &M::SLO, &M::ABS, 6, 3 }, /*0*/
@@ -23,3 +26,5 @@ const std::vector<MOS6502::instruction_t> MOS6502::opcode_table = {
     /*F*/ { "BEQ",  &M::BEQ, &M::REL, 2, 2 }, { "SBC", &M::SBC, &M::IIY, 5, 2 }, { "???", &M::XXX, &M::IMP, 2, 0 }, { "*ISB",  &M::ISB, &M::IIY, 8, 2 }, { "*NOP", &M::NO2, &M::ZPI, 3, 2 }, /*F*/ { "SBC", &M::SBC, &M::ZPX, 4, 2 }, { "INC", &M::INC, &M::ZPX, 6, 2 }, { "*ISB", &M::ISB, &M::ZPX, 6, 2 }, { "SED", &M::SED, &M::IMP, 2, 1 }, { "SBC", &M::SBC, &M::ABY, 4, 3 }, /*F*/ { "*NOP", &M::NOP, &M::IMP, 2, 1 }, { "*ISB", &M::ISB, &M::ABY, 7, 3 }, { "*NOP", &M::NOP, &M::ABX, 2, 3 }, { "SBC", &M::SBC, &M::ABX, 4, 3 }, { "INC", &M::INC, &M::ABX, 7, 3 }, { "*ISB", &M::ISB, &M::ABX, 7, 3 }, /*F*/
     //                    0                                  1                                  2                                    3                                   4                                        5                                  6                                   7                                  8                                  9                                         A                                   B                                   C                                  D                                  E                                   F
 };
+
+// clang-format on
