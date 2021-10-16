@@ -1,6 +1,6 @@
-include_directories(${CMAKE_SOURCE_DIR}/3rd_parties/doctest/doctest)
+include_directories(../3rd_parties/doctest/doctest)
 
-include_directories(${CMAKE_SOURCE_DIR}/src/emu6502)
+include_directories(../src/emu6502)
 
 add_executable (emu_test test.cpp)
 target_link_libraries (emu_test PRIVATE emu6502)
